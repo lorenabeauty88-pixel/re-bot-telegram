@@ -1,41 +1,12 @@
-const TelegramBot = require('node-telegram-bot-api');
+const express = require("express");
+const app = express();
 
-const token = process.env.TOKEN;
-
-const bot = new TelegramBot(token, { polling: true });
-
-bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(
-        msg.chat.id,
-`🌸 Bem-vinda ao Rê Recomenda 🌸
-
-Envie:
-
-/promo LINK
-
-Exemplo:
-/promo https://amzn.to/teste`
-    );
+app.get("/", (req, res) => {
+  res.send("Bot online!");
 });
 
-bot.onText(/\/promo (.+)/, (msg, match) => {
+const PORT = process.env.PORT || 3000;
 
-    const chatId = msg.chat.id;
-    const link = match[1];
-
-    const mensagem = `
-🌸 *RÊ RECOMENDA* 🌸
-
-✨ Oferta especial encontrada!
-
-🛍️ Produto incrível com preço imperdível 💖
-
-🔗 ${link}
-
-🚀 Aproveite antes que acabe!
-`;
-
-    bot.sendMessage(chatId, mensagem, {
-        parse_mode: 'Markdown'
-    });
+app.listen(PORT, () => {
+  console.log(Servidor rodando na porta ${PORT});
 });
