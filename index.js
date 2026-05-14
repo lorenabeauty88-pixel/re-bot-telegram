@@ -1,52 +1,47 @@
-const TelegramBot = require('node-telegram-bot-api');
+const axios = require("axios");
 
-// TOKEN do Railway
-const token = process.env.TOKEN;
-
-const bot = new TelegramBot(token, { polling: true });
-
-// START
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, '🌸 Rê Recomenda Store ativa! Envie /promo + link');
-});
-
-// INSTAGRAM (opcional)
-const insta = "https://instagram.com/SEU_USUARIO";
-
-bot.onText(/\/insta/, (msg) => {
-  bot.sendMessage(msg.chat.id, insta);
-});
-
-// PROMO - BOTÃO DE LOJA
-bot.onText(/\/promo (.+)/, (msg, match) => {
+bot.onText(/\/promo (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const link = match[1];
+  const url = match[1];
 
-  const texto = `
-🌸 RÊ RECOMENDA STORE 🌸
+  try {
+    const res = await axios.get(https://api.microlink.io/?url=${url});
+    const data = res.data.data;
 
-💖 Achadinho selecionado pra você
+    const title = data.title || "Produto em oferta";
+    const image = data.image?.url;
+    const desc = data.description || "";
 
-✨ Produto em oferta
-🚚 Consulte frete no link
-🔒 Compra segura
+    const caption = `
+🌸 RÊ RECOMENDA PRO 🌸
 
-🛒 Clique no botão abaixo para ver a oferta
+💖 ${title}
+
+📝 ${desc}
+
+🛒 Clique no botão para ver a oferta
 `;
 
-  bot.sendMessage(chatId, texto, {
-    parse_mode: "Markdown",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "🛒 VER OFERTA",
-            url: link
-          }
-        ]
-      ]
+    if (image) {
+      await bot.sendPhoto(chatId, image, {
+        caption,
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🛒 VER OFERTA", url }]
+          ]
+        }
+      });
+    } else {
+      await bot.sendMessage(chatId, caption, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🛒 VER OFERTA", url }]
+          ]
+        }
+      });
     }
-  });
-});
 
-console.log("Bot da loja iniciado");
+  } catch (err) {
+    bot.sendMessage(chatId, "⚠️ Não consegui montar o card. Tente outro link.");
+  }
+});
