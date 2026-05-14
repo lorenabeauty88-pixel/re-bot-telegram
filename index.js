@@ -3,4 +3,4 @@ bot.onText(/\/promo (.+)/, (msg, match) => {
   const texto = match[1];
 
   bot.sendMessage(chatId, texto);
-});
+});    
