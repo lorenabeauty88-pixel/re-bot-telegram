@@ -1,11 +1,12 @@
 {
-  "name": "re-recomenda-bot",
+  "name": "bottelegram",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "node-telegram-bot-api": "^0.64.0"
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.66.0"
   }
 }
