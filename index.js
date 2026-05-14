@@ -1,3 +1,23 @@
+const TelegramBot = require('node-telegram-bot-api');
+
+// TOKEN do Railway
+const token = process.env.TOKEN;
+
+const bot = new TelegramBot(token, { polling: true });
+
+// START
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, '🌸 Rê Recomenda Store ativa! Envie /promo + link');
+});
+
+// INSTAGRAM (opcional)
+const insta = "https://instagram.com/SEU_USUARIO";
+
+bot.onText(/\/insta/, (msg) => {
+  bot.sendMessage(msg.chat.id, insta);
+});
+
+// PROMO - BOTÃO DE LOJA
 bot.onText(/\/promo (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
   const link = match[1];
@@ -28,3 +48,5 @@ bot.onText(/\/promo (.+)/, (msg, match) => {
     }
   });
 });
+
+console.log("Bot da loja iniciado");
