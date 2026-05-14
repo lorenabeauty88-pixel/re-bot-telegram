@@ -1,12 +1,11 @@
-const express = require("express");
-const app = express();
+const TelegramBot = require('node-telegram-bot-api');
 
-app.get("/", (req, res) => {
-console.log(Servidor rodando na porta ${PORT});
+const token = process.env.TOKEN;
+
+const bot = new TelegramBot(token, { polling: true });
+
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, 'Bot funcionando!');
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(Servidor rodando na porta ${PORT});
-});
+console.log(Bot iniciado);
