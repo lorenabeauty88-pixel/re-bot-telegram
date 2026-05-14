@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("Bot online!");
+  res.send("Bot funcionando!");
 });
 
 const PORT = process.env.PORT || 3000;
