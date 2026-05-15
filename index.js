@@ -11,7 +11,7 @@ const bot = new TelegramBot(token, {
 console.log("BOT INICIADO");
 
 
-});
+
 bot.onText(/\/promo (.+)/, (msg, match) => {
 
   const chatId = msg.chat.id;
