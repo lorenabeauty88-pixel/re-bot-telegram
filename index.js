@@ -6,10 +6,7 @@ const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    "🌸 Bot funcionando! Use /promo + link"
-  );
+  bot.sendMessage(msg.chat.id, "Bot funcionando 🚀");
 });
 
 bot.onText(/\/promo (.+)/, async (msg, match) => {
@@ -17,6 +14,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
   const url = match[1];
 
   try {
+
     const res = await axios.get(https://api.microlink.io/?url=${url});
 
     const data = res.data.data;
@@ -25,16 +23,22 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     const image = data.image?.url;
 
     if (image) {
+
       await bot.sendPhoto(chatId, image, {
         caption: 🛒 ${title}
       });
+
     } else {
+
       await bot.sendMessage(chatId, 🛒 ${title});
+
     }
 
   } catch (err) {
+
     console.log(err);
 
     bot.sendMessage(chatId, "Erro ao gerar oferta.");
+
   }
 });
