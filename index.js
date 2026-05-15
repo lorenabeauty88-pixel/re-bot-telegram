@@ -6,40 +6,54 @@ const bot = new TelegramBot(token, { polling: true });
 
 console.log("🔥 BOT ACHADINHOS ML ONLINE");
 
-// 🔥 PEGA PRODUTO PELO LINK USANDO BUSCA (CORRETO)
+// 🔍 extrai ID corretamente do link
+function extrairId(url) {
+  const match = url.match(/MLB\d+/i); // pega MLB123 ou MLB-123
+
+  if (!match) return null;
+
+  return match[0].replace("-", "");
+}
+
+// 🚀 busca produto real pela API certa
 async function getProdutoML(link) {
+  const id = extrairId(link);
+
+  if (!id) return null;
+
   try {
     const res = await axios.get(
-      `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(link)}`
+      `https://api.mercadolibre.com/items/${id}`
     );
 
-    const item = res.data.results?.[0];
-
-    if (!item) return null;
+    const p = res.data;
 
     return {
-      nome: item.title,
-      preco: item.price,
-      imagem: item.thumbnail,
-      link: item.permalink
+      nome: p.title,
+      preco: p.price,
+      imagem: p.pictures?.[0]?.url,
+      link: p.permalink
     };
 
   } catch (err) {
-    console.log("API erro:", err.message);
+    console.log("Erro API ML:", err.message);
     return null;
   }
 }
 
-// 📩 QUALQUER LINK
+// 📩 qualquer link enviado
 bot.on("message", async (msg) => {
   const text = msg.text;
 
-  if (!text || !text.startsWith("http")) return;
+  if (!text || !text.includes("mercadolivre")) return;
 
   const p = await getProdutoML(text);
 
   if (!p) {
-    return bot.sendMessage(msg.chat.id, "❌ Não consegui achar esse produto");
+    return bot.sendMessage(
+      msg.chat.id,
+      "❌ Não consegui encontrar esse produto. Envie um link válido do Mercado Livre."
+    );
   }
 
   bot.sendPhoto(msg.chat.id, p.imagem, {
