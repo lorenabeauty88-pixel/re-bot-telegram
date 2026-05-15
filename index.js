@@ -1,68 +1,79 @@
-const TelegramBot = require("node-telegram-bot-api");
-const axios = require("axios");
-
-const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
-
-// Mensagem mais persuasiva (copy de vendas)
-function buildCaption(title, desc) {
-  return `
-🔥 OFERTA IMPERDÍVEL 🔥
-
-💖 ${title}
-
-📝 ${desc || "Produto selecionado com desconto especial por tempo limitado!"}
-
-⚡ Garanta antes que acabe!
-📦 Envio e disponibilidade podem mudar rapidamente
-
-🌸 RÊ RECOMENDA 🌸
-`;
-}
-
-// comando /promo
-bot.onText(/\/promo (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const url = match[1];
-
-  try {
+at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+Node.js v22.22.3
+npm warn config production Use --omit=dev instead.
+> bottelegram@1.0.0 start
+> node index.js
+/app/index.js:29
     const res = await axios.get(https://api.microlink.io/?url=${url});
-    const data = res.data.data;
-
-    const title = data.title || "Produto em oferta";
-    const image = data.image?.url;
-    const desc = data.description || "";
-
-    const caption = buildCaption(title, desc);
-
-    const options = {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🛒 VER OFERTA AGORA", url }]
-        ]
-      }
-    };
-
-    if (image) {
-      await bot.sendPhoto(chatId, image, { caption, ...options });
-    } else {
-      await bot.sendMessage(chatId, caption, options);
-    }
-
-  } catch (err) {
-    console.log(err);
-    bot.sendMessage(chatId, "⚠️ Não consegui montar a oferta. Tente outro link.");
-  }
-});
-
-// mensagem inicial
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, `
-🌸 Bem-vindo ao RÊ RECOMENDA 🌸
-
-Envie um link assim:
-👉 /promo https://amzn.to/xxxx
-
-Eu transformo em oferta automática 🔥
-`);
-});
+                                ^^^^^
+SyntaxError: missing ) after argument list
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at Module._compile (node:internal/modules/cjs/loader:1755:20)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+Node.js v22.22.3
+npm warn config production Use --omit=dev instead.
+> bottelegram@1.0.0 start
+> node index.js
+/app/index.js:29
+    const res = await axios.get(https://api.microlink.io/?url=${url});
+                                ^^^^^
+SyntaxError: missing ) after argument list
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at Module._compile (node:internal/modules/cjs/loader:1755:20)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+Node.js v22.22.3
+npm warn config production Use --omit=dev instead.
+> bottelegram@1.0.0 start
+> node index.js
+/app/index.js:29
+    const res = await axios.get(https://api.microlink.io/?url=${url});
+                                ^^^^^
+SyntaxError: missing ) after argument list
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at Module._compile (node:internal/modules/cjs/loader:1755:20)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+Node.js v22.22.3
+npm warn config production Use --omit=dev instead.
+> bottelegram@1.0.0 start
+> node index.js
+/app/index.js:29
+    const res = await axios.get(https://api.microlink.io/?url=${url});
+                                ^^^^^
+SyntaxError: missing ) after argument list
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at Module._compile (node:internal/modules/cjs/loader:1755:20)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+Node.js v22.22.3
+npm warn config production Use --omit=dev instead.
+> bottelegram@1.0.0 start
+> node index.js
+/app/index.js:29
+    const res = await axios.get(https://api.microlink.io/?url=${url});
+                                ^^^^^
+SyntaxError: missing ) after argument list
+    at wr…
