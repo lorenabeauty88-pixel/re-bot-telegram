@@ -1,30 +1,35 @@
-const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
-const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+async function resolverLink(url) {
+  try {
+    const res = await axios.get(url, {
+      maxRedirects: 5
+    });
 
-console.log("🔥 BOT ACHADINHOS ML ONLINE");
-
-// 🔍 extrai ID corretamente do link
-function extrairId(url) {
-  const match = url.match(/MLB\d+/i); // pega MLB123 ou MLB-123
-
-  if (!match) return null;
-
-  return match[0].replace("-", "");
+    return res.request.res.responseUrl || url;
+  } catch (e) {
+    return url;
+  }
 }
 
-// 🚀 busca produto real pela API certa
+function extrairId(url) {
+  const match = url.match(/MLB\d+/i);
+  if (!match) return null;
+  return match[0];
+}
+
 async function getProdutoML(link) {
-  const id = extrairId(link);
-
-  if (!id) return null;
-
   try {
-    const res = await axios.get(
-      `https://api.mercadolibre.com/items/${id}`
-    );
+    // 🔥 1. resolve encurtador meli.la
+    const realLink = await resolverLink(link);
+
+    // 🔥 2. pega ID do produto
+    const id = extrairId(realLink);
+
+    if (!id) return null;
+
+    // 🔥 3. chama API oficial
+    const res = await axios.get(`https://api.mercadolibre.com/items/${id}`);
 
     const p = res.data;
 
@@ -36,38 +41,7 @@ async function getProdutoML(link) {
     };
 
   } catch (err) {
-    console.log("Erro API ML:", err.message);
+    console.log("Erro ML:", err.message);
     return null;
   }
 }
-
-// 📩 qualquer link enviado
-bot.on("message", async (msg) => {
-  const text = msg.text;
-
-  if (!text || !text.includes("mercadolivre")) return;
-
-  const p = await getProdutoML(text);
-
-  if (!p) {
-    return bot.sendMessage(
-      msg.chat.id,
-      "❌ Não consegui encontrar esse produto. Envie um link válido do Mercado Livre."
-    );
-  }
-
-  bot.sendPhoto(msg.chat.id, p.imagem, {
-    caption: `🔥 ACHADINHO MERCADO LIVRE 🔥
-
-📦 ${p.nome}
-
-💰 R$ ${p.preco}
-
-🔗 ${p.link}`,
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: "🛒 COMPRAR AGORA", url: p.link }]
-      ]
-    }
-  });
-});
