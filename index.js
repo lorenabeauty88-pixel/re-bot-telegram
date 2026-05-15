@@ -1,15 +1,17 @@
-bot.sendPhoto(chatId, foto, {
-  caption:
-`🔥 OFERTA RELÂMPAGO 🔥
+const TelegramBot = require("node-telegram-bot-api");
 
-💸 Desconto especial
-🚚 Frete rápido
-⏰ Tempo limitado
+const token = process.env.BOT_TOKEN;
 
-👉 Clique abaixo para aproveitar`,
-  reply_markup: {
-    inline_keyboard: [
-      [{ text: "🛒 COMPRAR AGORA", url: link }]
-    ]
-  }
+console.log("TOKEN:", token);
+
+const bot = new TelegramBot(token, {
+  polling: true
+});
+
+console.log("BOT INICIADO");
+
+bot.on("message", (msg) => {
+  console.log("Mensagem recebida");
+
+  bot.sendMessage(msg.chat.id, "🔥 BOT FUNCIONANDO!");
 });
