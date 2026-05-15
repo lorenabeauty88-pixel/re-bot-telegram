@@ -6,15 +6,21 @@ const bot = new TelegramBot(token, {
   polling: true
 });
 
+console.log("✅ Bot online...");
+
 bot.onText(/\/start/, (msg) => {
 
   bot.sendMessage(
     msg.chat.id,
-`🌸 BOT DE PROMOÇÕES ONLINE 🚀
 
-Use:
+`🌸 BOT DE OFERTAS 🌸
 
-/promo LINK`
+Envie:
+
+/promo link
+
+Exemplo:
+/promo https://google.com`
   );
 
 });
@@ -22,26 +28,39 @@ Use:
 bot.onText(/\/promo (.+)/, (msg, match) => {
 
   const chatId = msg.chat.id;
-
   const link = match[1];
 
-  const texto = `
-🛍️ *PROMOÇÃO DO DIA* 🔥
+  const foto =
+    "https://i.imgur.com/2s9XK4p.jpeg";
 
-💸 Oferta imperdível
+  bot.sendPhoto(chatId, foto, {
 
-🔗 *Compre aqui:*
-${link}
+    caption:
+`🔥 SUPER OFERTA 🔥
 
-❤️ *GRUPOS COM VAGAS*
-https://seulink.com
-`;
+🛍️ Produto em promoção
+🚚 Frete disponível
+⏰ Oferta limitada
 
-  bot.sendMessage(chatId, texto, {
-    parse_mode: "Markdown",
-    disable_web_page_preview: false
+👇 Clique no botão abaixo 👇`,
+
+    reply_markup: {
+
+      inline_keyboard: [
+        [
+          {
+            text: "🛒 VER OFERTA",
+            url: link
+          }
+        ]
+      ]
+
+    }
+
   });
 
 });
 
-console.log("Bot online 🚀");
+bot.on("polling_error", (error) => {
+  console.log(error.message);
+});
