@@ -1,31 +1,14 @@
-bot.onText(/\/recomenda (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const input = match[1];
+const TelegramBot = require("node-telegram-bot-api");
 
-  console.log("COMANDO RECEBIDO:", input);
+console.log("🔥 BOT INICIADO");
 
-  bot.sendMessage(chatId, "🔎 Processando link...");
+const bot = new TelegramBot(process.env.BOT_TOKEN, {
+  polling: true
+});
 
-  if (!input.includes("http")) {
-    return bot.sendMessage(chatId, "❌ Envie um link do Mercado Livre.");
-  }
+// captura QUALQUER mensagem
+bot.on("message", (msg) => {
+  console.log("📩 MENSAGEM CHEGOU:", msg.text);
 
-  const produto = await buscarPorLinkML(input);
-
-  if (!produto) {
-    return bot.sendMessage(chatId, "❌ Não consegui ler esse produto. Envie outro link do Mercado Livre.");
-  }
-
-  const gif = "https://media.giphy.com/media/3o7aD2saalBwwftBIY/giphy.gif";
-
-  bot.sendAnimation(chatId, gif);
-
-  bot.sendPhoto(chatId, produto.imagem, {
-    caption:
-      `🔥 RE RECOMENDA\n\n` +
-      `🛍 ${produto.nome}\n` +
-      `💰 R$ ${produto.preco}\n` +
-      (produto.desconto > 0 ? `🔥 ${produto.desconto}% OFF\n\n` : "\n") +
-      `🔗 ${produto.link}`
-  });
+  bot.sendMessage(msg.chat.id, "🔥 ESTOU RECEBENDO MENSAGENS");
 });
