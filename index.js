@@ -1,45 +1,38 @@
 const TelegramBot = require("node-telegram-bot-api");
-const axios = require("axios");
 
 const token = process.env.BOT_TOKEN;
 
-const bot = new TelegramBot(token, { polling: true });
-
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    "🌸 Bot funcionando 🚀\n\nUse:\n/promo link"
-  );
+const bot = new TelegramBot(token, {
+  polling: true,
 });
 
-bot.onText(/\/promo (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const url = match[1];
+const canal = "@SEUCANAL";
 
-  try {
-    const res = await axios.get(
-      `https://api.microlink.io/?url=${encodeURIComponent(url)}`
-    );
+console.log("Bot online");
 
-    const data = res.data.data;
+bot.onText(/\/promo/, async (msg) => {
 
-    const title = data.title || "Produto";
-    const image = data.image?.url;
+  bot.sendPhoto(
+    canal,
+    "https://images.unsplash.com/photo-1541643600914-78b084683601",
+    {
+      caption:
+`🔥 PROMO IMPERDÍVEL 🔥
 
-    if (image) {
-      await bot.sendPhoto(chatId, image, {
-        caption: `🛒 ${title}`
-      });
-    } else {
-      await bot.sendMessage(chatId, `🛒 ${title}`);
+🛍 Kit Carolina Herrera Good Girl
+
+💸 De: R$ 766,85
+🔥 Por: R$ 582,78
+
+💳 10x sem juros
+
+✅ Produto original
+✅ Frete rápido
+✅ Oferta limitada
+
+🔗 COMPRE AQUI:
+https://seulink.com`,
     }
+  );
 
-  } catch (err) {
-    console.log(err);
-
-    bot.sendMessage(
-      chatId,
-      "Erro ao gerar oferta."
-    );
-  }
 });
