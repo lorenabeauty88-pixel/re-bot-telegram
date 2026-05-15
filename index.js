@@ -1,56 +1,39 @@
-const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
-const token = process.env.BOT_TOKEN;
-
-// 🔍 TESTE DO TOKEN
-console.log("🔑 TOKEN CARREGADO:", token ? "SIM" : "NÃO");
-
-// ❌ trava o bot se não tiver token
-if (!token) {
-  console.log("❌ BOT_TOKEN não encontrado. Configure no painel!");
-  process.exit(1);
+// extrai ID do link do Mercado Livre
+function extrairId(url) {
+  const match = url.match(/MLB-\d+/);
+  return match ? match[0] : null;
 }
 
-const bot = new TelegramBot(token, { polling: true });
+async function getProdutoML(link) {
 
-console.log("🔥 BOT INICIANDO COM SUCESSO");
+  const id = extrairId(link);
 
-// START
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    `🌸 Bem-vindo ao Achadinhos Viral 🚀
-
-Comandos:
-/promo - ver ofertas`
-  );
-});
-
-// PROMO
-bot.onText(/\/promo/, (msg) => {
-  const chatId = msg.chat.id;
-
-  const produto = {
-    nome: "Fone Bluetooth Bass 🔊",
-    preco: "R$ 49,90",
-    link: "https://seulinkafiliado.com",
-    imagem: "https://i.imgur.com/Exemplo.jpg"
-  };
-
-  bot.sendPhoto(chatId, produto.imagem, {
-    caption: `🔥 OFERTA ACHADINHO 🔥
-
-📦 ${produto.nome}
-💰 ${produto.preco}
-
-👉 Comprar: ${produto.link}`
-  });
-});
-
-// RESPOSTA PADRÃO
-bot.on("message", (msg) => {
-  if (!msg.text.startsWith("/")) {
-    bot.sendMessage(msg.chat.id, "Digite /promo para ver ofertas 🔥");
+  if (!id) {
+    return "❌ Link inválido do Mercado Livre";
   }
-});
+
+  const url = `https://api.mercadolibre.com/items/${id}`;
+
+  const res = await axios.get(url);
+
+  const p = res.data;
+
+  const preco = p.price;
+  const imagem = p.pictures?.[0]?.url;
+  const nome = p.title;
+  const linkAfiliado = p.permalink;
+
+  return `
+🔥 ACHADINHO MERCADO LIVRE 🔥
+
+📦 ${nome}
+
+💰 R$ ${preco.toFixed(2)}
+
+🛒 ${linkAfiliado}
+
+🖼️ ${imagem}
+`;
+}
