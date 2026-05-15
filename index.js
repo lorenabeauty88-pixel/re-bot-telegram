@@ -15,7 +15,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
   try {
 
-    const res = await axios.get(https://api.microlink.io/?url=${url});
+   const res = await axios.get(https://api.microlink.io/?url=${url});
     const data = res.data.data;
 
     const title = data.title || "Produto";
