@@ -1,93 +1,111 @@
 const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
 
 const token = process.env.BOT_TOKEN;
 
-if (!token) {
-  console.log("❌ BOT_TOKEN não configurado");
-  process.exit(1);
-}
-
 const bot = new TelegramBot(token, { polling: true });
 
-console.log("🤖 BOT ONLINE");
-
-// 🔥 PRODUTOS (ACHADINHOS)
+/**
+ * BASE DE PRODUTOS (você pode aumentar depois)
+ */
 const produtos = [
   {
-    nome: "Fone Bluetooth X15",
-    preco: "R$ 29,90",
-    imagem: "https://i.imgur.com/2s9XK4p.jpeg",
-    link: "https://seulinkafiliado.com/1"
-  },
-  {
-    nome: "Mini Caixa de Som LED",
+    nome: "Fone Bluetooth Top Bass",
     preco: "R$ 39,90",
-    imagem: "https://i.imgur.com/2s9XK4p.jpeg",
-    link: "https://seulinkafiliado.com/2"
+    desconto: "70% OFF",
+    link: "https://seulinkdeafiliado.com/1",
+    imagem: "https://via.placeholder.com/300"
   },
   {
-    nome: "Smart Watch Ultra",
-    preco: "R$ 59,90",
-    imagem: "https://i.imgur.com/2s9XK4p.jpeg",
-    link: "https://seulinkafiliado.com/3"
+    nome: "Mini Caixa de Som Bluetooth",
+    preco: "R$ 29,90",
+    desconto: "60% OFF",
+    link: "https://seulinkdeafiliado.com/2",
+    imagem: "https://via.placeholder.com/300"
+  },
+  {
+    nome: "Luminária LED Criativa",
+    preco: "R$ 24,90",
+    desconto: "50% OFF",
+    link: "https://seulinkdeafiliado.com/3",
+    imagem: "https://via.placeholder.com/300"
   }
 ];
 
-// ✔️ START
+/**
+ * START
+ */
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
-`🔥 ACHADINHOS VIRAL BOT 🔥
-
-Comandos:
-/produto - ver oferta aleatória
-/lista - ver catálogo`
+    "🌸 Achadinhos Viral 🚀\n\n" +
+    "Use:\n" +
+    "/promo nome do produto\n" +
+    "/recomenda (ou /rerecomenda) 🔥"
   );
 });
 
-// 🎲 PRODUTO ALEATÓRIO
-bot.onText(/\/produto/, (msg) => {
+/**
+ * PROMO por busca
+ */
+bot.onText(/\/promo (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const query = match[1];
+
+  bot.sendMessage(chatId, "🔎 Buscando promoções...");
+
+  try {
+    const produto = {
+      nome: `🔥 Oferta encontrada: ${query}`,
+      preco: "R$ 49,90",
+      desconto: "50% OFF",
+      link: "https://seulinkdeafiliado.com",
+      imagem: "https://via.placeholder.com/300"
+    };
+
+    bot.sendPhoto(chatId, produto.imagem, {
+      caption:
+        `🛍 ${produto.nome}\n\n` +
+        `💰 Preço: ${produto.preco}\n` +
+        `🏷 Desconto: ${produto.desconto}\n\n` +
+        `🔗 Comprar: ${produto.link}`
+    });
+
+  } catch (error) {
+    console.log(error);
+    bot.sendMessage(chatId, "❌ Erro ao buscar promoção.");
+  }
+});
+
+/**
+ * 🔥 RECOMENDA (achadinhos aleatórios)
+ */
+bot.onText(/\/(recomenda|rerecomenda)/, (msg) => {
   const chatId = msg.chat.id;
 
-  const p = produtos[Math.floor(Math.random() * produtos.length)];
+  const produto = produtos[Math.floor(Math.random() * produtos.length)];
 
-  bot.sendPhoto(chatId, p.imagem, {
+  bot.sendPhoto(chatId, produto.imagem, {
     caption:
-`🔥 ACHADINHO DO DIA 🔥
-
-📦 ${p.nome}
-💰 ${p.preco}
-
-⚡ Oferta limitada!`,
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "🛒 COMPRAR AGORA",
-            url: p.link
-          }
-        ]
-      ]
-    }
+      `🔥 RECOMENDAÇÃO ESPECIAL\n\n` +
+      `🛍 ${produto.nome}\n` +
+      `💰 ${produto.preco}\n` +
+      `🏷 ${produto.desconto}\n\n` +
+      `🔗 Comprar agora: ${produto.link}`
   });
 });
 
-// 📋 LISTA
-bot.onText(/\/lista/, (msg) => {
-  const chatId = msg.chat.id;
-
-  let texto = "🔥 CATÁLOGO DE ACHADINHOS 🔥\n\n";
-
-  produtos.forEach((p, i) => {
-    texto += `${i + 1}. ${p.nome} - ${p.preco}\n`;
-  });
-
-  bot.sendMessage(chatId, texto);
-});
-
-// 💬 qualquer mensagem
+/**
+ * ERRO COMANDO
+ */
 bot.on("message", (msg) => {
-  if (msg.text && !msg.text.startsWith("/")) {
-    bot.sendMessage(msg.chat.id, "🔥 Use /produto para ver ofertas");
+  const chatId = msg.chat.id;
+  const text = msg.text;
+
+  if (!text.startsWith("/start") && !text.startsWith("/promo") && !text.startsWith("/recomenda")) {
+    bot.sendMessage(
+      chatId,
+      "❗ Comando não reconhecido.\nUse:\n/promo ou /recomenda"
+    );
   }
 });
