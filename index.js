@@ -1,38 +1,11 @@
-async function buscarPorLinkML(link) {
-  try {
-    // 🔥 pega qualquer padrão MLB (mais robusto)
-    const match = link.match(/MLB-\d+|MLB\d+/i);
+const TelegramBot = require("node-telegram-bot-api");
 
-    if (!match) {
-      return null;
-    }
+console.log("🔥 BOT INICIANDO...");
+console.log("TOKEN:", process.env.BOT_TOKEN);
 
-    const id = match[0].replace("-", "");
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-    const url = `https://api.mercadolibre.com/items/${id}`;
-    const res = await axios.get(url);
-
-    const item = res.data;
-
-    const precoAtual = item.price;
-    const precoOriginal = item.original_price || item.price;
-
-    let desconto = 0;
-    if (precoOriginal > precoAtual) {
-      desconto = Math.round(((precoOriginal - precoAtual) / precoOriginal) * 100);
-    }
-
-    return {
-      nome: item.title,
-      preco: precoAtual,
-      precoOriginal: precoOriginal,
-      desconto: desconto,
-      link: item.permalink,
-      imagem: item.thumbnail
-    };
-
-  } catch (err) {
-    console.log("ERRO LINK ML:", err.message);
-    return null;
-  }
-}
+bot.on("message", (msg) => {
+  console.log("📩 RECEBEU MENSAGEM");
+  bot.sendMessage(msg.chat.id, "🔥 BOT ONLINE FUNCIONANDO");
+});
