@@ -15,3 +15,33 @@ bot.on("message", (msg) => {
 
   bot.sendMessage(msg.chat.id, "🔥 BOT FUNCIONANDO!");
 });
+bot.onText(/\/promo (.+)/, (msg, match) => {
+
+  const chatId = msg.chat.id;
+  const link = match[1];
+
+  const foto = "https://i.imgur.com/2s9XK4p.jpeg";
+
+  bot.sendPhoto(chatId, foto, {
+    caption:
+`🔥 OFERTA RELÂMPAGO 🔥
+
+💸 Desconto exclusivo
+🚚 Frete rápido
+⏰ Por tempo limitado
+
+👉 Clique no botão abaixo`,
+
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "🛒 COMPRAR AGORA",
+            url: link
+          }
+        ]
+      ]
+    }
+  });
+
+});
