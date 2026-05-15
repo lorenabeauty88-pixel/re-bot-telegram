@@ -10,10 +10,7 @@ const bot = new TelegramBot(token, {
 
 console.log("BOT INICIADO");
 
-bot.on("message", (msg) => {
-  console.log("Mensagem recebida");
 
-  bot.sendMessage(msg.chat.id, "🔥 BOT FUNCIONANDO!");
 });
 bot.onText(/\/promo (.+)/, (msg, match) => {
 
