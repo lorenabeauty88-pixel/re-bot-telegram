@@ -10,12 +10,14 @@ bot.onText(/\/start/, (msg) => {
 });
 
 bot.onText(/\/promo (.+)/, async (msg, match) => {
+
   const chatId = msg.chat.id;
   const url = match[1];
 
   try {
 
-   const res = await axios.get(https://api.microlink.io/?url=${url});
+    const res = await axios.get(https://api.microlink.io/?url=${url});
+
     const data = res.data.data;
 
     const title = data.title || "Produto";
@@ -40,4 +42,5 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     bot.sendMessage(chatId, "Erro ao gerar oferta.");
 
   }
+
 });
