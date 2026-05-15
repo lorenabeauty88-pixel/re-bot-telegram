@@ -3,36 +3,45 @@ const TelegramBot = require("node-telegram-bot-api");
 const token = process.env.BOT_TOKEN;
 
 const bot = new TelegramBot(token, {
-  polling: true,
+  polling: true
 });
 
-const canal = "@SEUCANAL";
+bot.onText(/\/start/, (msg) => {
 
-console.log("Bot online");
+  bot.sendMessage(
+    msg.chat.id,
+`🌸 BOT DE PROMOÇÕES ONLINE 🚀
 
-bot.onText(/\/promo/, async (msg) => {
+Use:
 
-  bot.sendPhoto(
-    canal,
-    "https://images.unsplash.com/photo-1541643600914-78b084683601",
-    {
-      caption:
-`🔥 PROMO IMPERDÍVEL 🔥
-
-🛍 Kit Carolina Herrera Good Girl
-
-💸 De: R$ 766,85
-🔥 Por: R$ 582,78
-
-💳 10x sem juros
-
-✅ Produto original
-✅ Frete rápido
-✅ Oferta limitada
-
-🔗 COMPRE AQUI:
-https://seulink.com`,
-    }
+/promo LINK`
   );
 
 });
+
+bot.onText(/\/promo (.+)/, (msg, match) => {
+
+  const chatId = msg.chat.id;
+
+  const link = match[1];
+
+  const texto = `
+🛍️ *PROMOÇÃO DO DIA* 🔥
+
+💸 Oferta imperdível
+
+🔗 *Compre aqui:*
+${link}
+
+❤️ *GRUPOS COM VAGAS*
+https://seulink.com
+`;
+
+  bot.sendMessage(chatId, texto, {
+    parse_mode: "Markdown",
+    disable_web_page_preview: false
+  });
+
+});
+
+console.log("Bot online 🚀");
