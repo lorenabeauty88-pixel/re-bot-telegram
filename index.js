@@ -1,57 +1,46 @@
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
-// TOKEN do Render (Environment Variable)
 const token = process.env.BOT_TOKEN;
-
 const bot = new TelegramBot(token, { polling: true });
 
 /**
- * 🔥 MERCADO LIVRE (REAL)
+ * 🔎 PEGA PRODUTO PELO LINK (MERCADO LIVRE)
  */
-async function buscarMercadoLivre(query) {
+async function buscarPorLinkML(link) {
   try {
-    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
+    const match = link.match(/MLB\d+/);
+    if (!match) return null;
+
+    const id = match[0];
+
+    const url = `https://api.mercadolibre.com/items/${id}`;
     const res = await axios.get(url);
 
-    const item = res.data.results?.[0];
-    if (!item) return null;
+    const item = res.data;
+
+    const precoAtual = item.price;
+    const precoOriginal = item.original_price || item.price;
+
+    // calcula desconto
+    let desconto = 0;
+    if (precoOriginal > precoAtual) {
+      desconto = Math.round(((precoOriginal - precoAtual) / precoOriginal) * 100);
+    }
 
     return {
       nome: item.title,
-      preco: `R$ ${item.price}`,
+      preco: precoAtual,
+      precoOriginal: precoOriginal,
+      desconto: desconto,
       link: item.permalink,
-      imagem: item.thumbnail,
-      loja: "Mercado Livre"
+      imagem: item.thumbnail
     };
+
   } catch (err) {
-    console.log("Erro ML:", err.message);
+    console.log(err.message);
     return null;
   }
-}
-
-/**
- * 🟠 SHOPEE (AFILIADO MANUAL)
- */
-function buscarShopee(query) {
-  return {
-    nome: "🔥 Oferta Shopee: " + query,
-    preco: "ver no app",
-    link: "https://shopee.com.br",
-    imagem: "https://via.placeholder.com/300",
-    loja: "Shopee"
-  };
-}
-
-/**
- * 🔎 BUSCA GERAL (ML primeiro, depois Shopee)
- */
-async function buscarProduto(query) {
-  const ml = await buscarMercadoLivre(query);
-
-  if (ml) return ml;
-
-  return buscarShopee(query);
 }
 
 /**
@@ -60,50 +49,43 @@ async function buscarProduto(query) {
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
-    "🔥 ACHADINHOS VIRAL ON 🚀\n\n" +
-    "/promo produto\n\n" +
-    "Exemplo:\n" +
-    "/promo fone bluetooth"
+    "🔥 RE RECOMENDA ON\n\n" +
+    "Envie um link do Mercado Livre:\n" +
+    "/recomenda link"
   );
 });
 
 /**
- * 🔎 PROMO
+ * 🔥 RE RECOMENDA
  */
-bot.onText(/\/promo (.+)/, async (msg, match) => {
+bot.onText(/\/recomenda (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const query = match[1];
+  const input = match[1];
 
-  bot.sendMessage(chatId, "🔎 Buscando as melhores ofertas...");
+  bot.sendMessage(chatId, "🔎 Analisando produto...");
 
-  try {
-    const produto = await buscarProduto(query);
-
-    bot.sendPhoto(chatId, produto.imagem, {
-      caption:
-        `🔥 ACHADINHO VIRAL\n\n` +
-        `🛍 ${produto.nome}\n` +
-        `💰 ${produto.preco}\n` +
-        `🏬 ${produto.loja}\n\n` +
-        `🔗 Comprar agora:\n${produto.link}`
-    });
-
-  } catch (err) {
-    console.log(err);
-    bot.sendMessage(chatId, "❌ Erro ao buscar produto.");
+  if (!input.includes("http")) {
+    return bot.sendMessage(chatId, "❌ Envie um link do Mercado Livre.");
   }
-});
 
-/**
- * ❗ COMANDO INVÁLIDO
- */
-bot.on("message", (msg) => {
-  const text = msg.text;
+  const produto = await buscarPorLinkML(input);
 
-  if (!text.startsWith("/start") && !text.startsWith("/promo")) {
-    bot.sendMessage(
-      msg.chat.id,
-      "❗ Use:\n/promo nome do produto"
-    );
+  if (!produto) {
+    return bot.sendMessage(chatId, "❌ Não consegui ler esse produto.");
   }
+
+  const gif = "https://media.giphy.com/media/3o7aD2saalBwwftBIY/giphy.gif";
+
+  bot.sendAnimation(chatId, gif);
+
+  bot.sendPhoto(chatId, produto.imagem, {
+    caption:
+      `🔥 RE RECOMENDA\n\n` +
+      `🛍 ${produto.nome}\n\n` +
+      `💰 Preço atual: R$ ${produto.preco}\n` +
+      (produto.desconto > 0
+        ? `🔥 Desconto: ${produto.desconto}% OFF\n`
+        : `🔥 Sem promoção ativa\n`) +
+      `\n🔗 Comprar agora:\n${produto.link}`
+  });
 });
