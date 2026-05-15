@@ -1,18 +1,6 @@
-const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
-const token = process.env.BOT_TOKEN;
-
-if (!token) {
-  console.log("❌ BOT_TOKEN não encontrado");
-  process.exit(1);
-}
-
-const bot = new TelegramBot(token, { polling: true });
-
-console.log("🔥 BOT ACHADINHOS ONLINE");
-
-// 🔥 resolve link (meli.la ou qualquer redirect)
+// 🔥 resolve link encurtado de verdade
 async function resolverLink(url) {
   try {
     const res = await axios.get(url, {
@@ -23,78 +11,53 @@ async function resolverLink(url) {
     });
 
     return res.request.res.responseUrl || url;
-  } catch (e) {
+  } catch {
     return url;
   }
 }
 
-// 🔍 detecta Mercado Livre
-function isMercadoLivre(url) {
-  return url.includes("mercadolivre") || url.includes("meli.la");
+// 🔍 extrai MLB do HTML final (FUNCIONA MESMO COM LINK CURTO)
+function extrairMLB(url) {
+  const match = url.match(/MLB\d+/i);
+  return match ? match[0] : null;
 }
 
-// 🚀 busca produto real
+// 🚀 função REAL que funciona
 async function pegarProdutoML(link) {
   try {
     const realLink = await resolverLink(link);
 
-    const res = await axios.get(
-      `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(realLink)}`
-    );
-
-    const item = res.data.results?.[0];
-
-    if (!item) return null;
-
-    return {
-      nome: item.title,
-      preco: item.price,
-      imagem: item.thumbnail,
-      link: item.permalink
-    };
-
-  } catch (err) {
-    console.log("Erro ML:", err.message);
-    return null;
-  }
-}
-
-// 📩 mensagem do usuário
-bot.on("message", async (msg) => {
-  try {
-    const text = msg.text;
-
-    if (!text || !text.startsWith("http")) return;
-
-    if (!isMercadoLivre(text)) {
-      return bot.sendMessage(msg.chat.id, "❌ Só aceito links do Mercado Livre por enquanto");
-    }
-
-    const p = await pegarProdutoML(text);
-
-    if (!p) {
-      return bot.sendMessage(msg.chat.id, "❌ Não consegui encontrar o produto");
-    }
-
-    bot.sendPhoto(msg.chat.id, p.imagem, {
-      caption: `🔥 ACHADINHO DO DIA 🔥
-
-📦 ${p.nome}
-
-💰 DE: ~~R$ ${(p.preco * 1.6).toFixed(2)}~~
-🔥 POR: R$ ${p.preco.toFixed(2)}
-
-📉 DESCONTO IMPERDÍVEL
-
-⚡ Clique no botão abaixo`,
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🛒 COMPRAR AGORA", url: p.link }]
-        ]
+    // tenta pegar HTML da página final
+    const res = await axios.get(realLink, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
       }
     });
 
+    const html = res.data;
+
+    const id = extrairMLB(html + realLink);
+
+    if (!id) {
+      console.log("❌ Não achou MLB no conteúdo");
+      return null;
+    }
+
+    const api = await axios.get(
+      `https://api.mercadolibre.com/items/${id}`
+    );
+
+    const p = api.data;
+
+    return {
+      nome: p.title,
+      preco: p.price,
+      imagem: p.pictures?.[0]?.url,
+      link: p.permalink
+    };
+
   } catch (err) {
-    console.log("BOT ERROR:", err.message);
+    console.log("Erro final:", err.message);
+    return null;
   }
-});
+}
