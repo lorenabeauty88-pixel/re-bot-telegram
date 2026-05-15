@@ -1,12 +1,32 @@
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
+console.log("🔥 BOT INICIANDO");
+
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-async function buscarPorLinkML(link) {
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const text = msg.text || "";
+
+  console.log("📩 RECEBIDO:", text);
+
+  if (!text.startsWith("/recomenda")) return;
+
+  const link = text.replace("/recomenda", "").trim();
+
+  if (!link) {
+    return bot.sendMessage(chatId, "❌ Envie um link depois do comando.");
+  }
+
+  bot.sendMessage(chatId, "🔎 Buscando produto...");
+
   try {
     const match = link.match(/MLB\d+/i);
-    if (!match) return null;
+
+    if (!match) {
+      return bot.sendMessage(chatId, "❌ Link inválido do Mercado Livre.");
+    }
 
     const id = match[0];
 
@@ -21,52 +41,21 @@ async function buscarPorLinkML(link) {
       desconto = Math.round(((original - preco) / original) * 100);
     }
 
-    return {
-      nome: item.title,
-      preco,
-      desconto,
-      link: item.permalink,
-      imagem: item.thumbnail
-    };
+    const gif = "https://media.giphy.com/media/3o7aD2saalBwwftBIY/giphy.gif";
+
+    await bot.sendAnimation(chatId, gif);
+
+    await bot.sendPhoto(chatId, item.thumbnail, {
+      caption:
+        `🔥 RE RECOMENDA\n\n` +
+        `🛍 ${item.title}\n` +
+        `💰 R$ ${preco}\n` +
+        (desconto > 0 ? `🔥 ${desconto}% OFF\n\n` : "\n") +
+        `🔗 ${item.permalink}`
+    });
 
   } catch (err) {
-    console.log(err.message);
-    return null;
+    console.log("ERRO:", err.message);
+    bot.sendMessage(chatId, "❌ Erro ao buscar produto.");
   }
-}
-
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "🔥 RE RECOMENDA ON\nEnvie /recomenda + link");
-});
-
-bot.onText(/\/recomenda (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const input = match[1];
-
-  console.log("📩 RECOMENDA RECEBIDO:", input);
-
-  if (!input.includes("http")) {
-    return bot.sendMessage(chatId, "❌ Envie um link do Mercado Livre.");
-  }
-
-  bot.sendMessage(chatId, "🔎 Buscando oferta...");
-
-  const produto = await buscarPorLinkML(input);
-
-  if (!produto) {
-    return bot.sendMessage(chatId, "❌ Não consegui abrir esse link.");
-  }
-
-  const gif = "https://media.giphy.com/media/3o7aD2saalBwwftBIY/giphy.gif";
-
-  bot.sendAnimation(chatId, gif);
-
-  bot.sendPhoto(chatId, produto.imagem, {
-    caption:
-      `🔥 RE RECOMENDA\n\n` +
-      `🛍 ${produto.nome}\n` +
-      `💰 R$ ${produto.preco}\n` +
-      (produto.desconto > 0 ? `🔥 ${produto.desconto}% OFF\n\n` : "\n") +
-      `🔗 Comprar agora:\n${produto.link}`
-  });
 });
