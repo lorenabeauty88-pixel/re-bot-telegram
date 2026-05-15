@@ -1,79 +1,40 @@
-at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-Node.js v22.22.3
-npm warn config production Use --omit=dev instead.
-> bottelegram@1.0.0 start
-> node index.js
-/app/index.js:29
+const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
+
+const token = process.env.BOT_TOKEN;
+
+const bot = new TelegramBot(token, { polling: true });
+
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    "🌸 Bot funcionando! Use /promo + link"
+  );
+});
+
+bot.onText(/\/promo (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const url = match[1];
+
+  try {
     const res = await axios.get(https://api.microlink.io/?url=${url});
-                                ^^^^^
-SyntaxError: missing ) after argument list
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-Node.js v22.22.3
-npm warn config production Use --omit=dev instead.
-> bottelegram@1.0.0 start
-> node index.js
-/app/index.js:29
-    const res = await axios.get(https://api.microlink.io/?url=${url});
-                                ^^^^^
-SyntaxError: missing ) after argument list
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-Node.js v22.22.3
-npm warn config production Use --omit=dev instead.
-> bottelegram@1.0.0 start
-> node index.js
-/app/index.js:29
-    const res = await axios.get(https://api.microlink.io/?url=${url});
-                                ^^^^^
-SyntaxError: missing ) after argument list
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-Node.js v22.22.3
-npm warn config production Use --omit=dev instead.
-> bottelegram@1.0.0 start
-> node index.js
-/app/index.js:29
-    const res = await axios.get(https://api.microlink.io/?url=${url});
-                                ^^^^^
-SyntaxError: missing ) after argument list
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-Node.js v22.22.3
-npm warn config production Use --omit=dev instead.
-> bottelegram@1.0.0 start
-> node index.js
-/app/index.js:29
-    const res = await axios.get(https://api.microlink.io/?url=${url});
-                                ^^^^^
-SyntaxError: missing ) after argument list
-    at wr…
+
+    const data = res.data.data;
+
+    const title = data.title || "Produto";
+    const image = data.image?.url;
+
+    if (image) {
+      await bot.sendPhoto(chatId, image, {
+        caption: 🛒 ${title}
+      });
+    } else {
+      await bot.sendMessage(chatId, 🛒 ${title});
+    }
+
+  } catch (err) {
+    console.log(err);
+
+    bot.sendMessage(chatId, "Erro ao gerar oferta.");
+  }
+});
