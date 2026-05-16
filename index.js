@@ -3,65 +3,69 @@ async function pegarProduto(link) {
     const realLink = await resolverLink(link);
     const loja = detectarLoja(realLink);
 
-    const res = await axios.get(realLink, {
-      timeout: 10000,
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "pt-BR,pt;q=0.9"
-      }
-    });
-
-    const html = res.data;
-
-    if (!html || html.includes("not viewable")) {
-      throw new Error("Conteúdo bloqueado pelo site");
-    }
-
-    const $ = cheerio.load(html);
-
-    let titulo = $("title").text() || "Produto";
-    let imagem = $('meta[property="og:image"]').attr("content");
-    let preco = html.match(/"price":\s?([0-9.]+)/);
-
-    if (preco) preco = parseFloat(preco[1]);
-    else preco = 49.9;
-
-    if (!imagem) {
-      imagem = fallbackImagem(loja);
-    }
+    let titulo = "🔥 Produto";
+    let imagem = fallbackImagem(loja);
+    let preco = 49.9;
 
     // =========================
-    // 🟡 MERCADO LIVRE NÃO MEXIDO
+    // 🟡 MERCADO LIVRE (mantido scraping)
     // =========================
     if (loja === "🟡 Mercado Livre") {
-      const mlTitulo =
+      const res = await axios.get(realLink, {
+        timeout: 10000,
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept-Language": "pt-BR"
+        }
+      });
+
+      const html = res.data;
+      const $ = cheerio.load(html);
+
+      titulo =
         $('meta[property="og:title"]').attr("content") ||
         $("title").text();
 
-      const mlImagem =
-        $('meta[property="og:image"]').attr("content");
+      imagem =
+        $('meta[property="og:image"]').attr("content") ||
+        fallbackImagem(loja);
 
-      const mlPreco = html.match(/"price":\s?([0-9.]+)/);
+      const match = html.match(/"price":\s?([0-9.]+)/);
+      if (match) preco = parseFloat(match[1]);
 
+      return { titulo, imagem, preco, link: realLink, loja };
+    }
+
+    // =========================
+    // 🟣 SHOPEE (SAFE MODE)
+    // =========================
+    if (loja === "🟣 Shopee") {
       return {
-        titulo: mlTitulo,
-        imagem: mlImagem,
-        preco: mlPreco ? parseFloat(mlPreco[1]) : 49.9,
+        titulo: "🔥 Produto Shopee",
+        imagem: fallbackImagem(loja),
+        preco: 49.9,
         link: realLink,
         loja
       };
     }
 
-    return {
-      titulo,
-      imagem,
-      preco,
-      link: realLink,
-      loja
-    };
+    // =========================
+    // 🟠 AMAZON (SAFE MODE)
+    // =========================
+    if (loja === "🟠 Amazon") {
+      return {
+        titulo: "🔥 Produto Amazon",
+        imagem: fallbackImagem(loja),
+        preco: 49.9,
+        link: realLink,
+        loja
+      };
+    }
+
+    return null;
 
   } catch (err) {
-    console.log("❌ ERRO COMPLETO:", err.message);
+    console.log("❌ ERRO:", err.message);
     return null;
   }
 }
