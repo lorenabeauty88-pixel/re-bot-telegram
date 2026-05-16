@@ -12,33 +12,18 @@ if (!token) {
 // =========================
 // 🚀 BOT ESTÁVEL
 // =========================
-const TelegramBot = require("node-telegram-bot-api");
-
 const bot = new TelegramBot(token, {
-  polling: {
-    autoStart: true,
-    interval: 3000,
-    params: {
-      timeout: 10
-    }
-  }
+  polling: true
 });
 
 console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
 
-// =========================
-// 🧨 PROTEÇÃO
-// =========================
-process.on("uncaughtException", err =>
-  console.log("⚠ uncaughtException:", err.message)
-);
-
-process.on("unhandledRejection", err =>
-  console.log("⚠ unhandledRejection:", err.message)
-);
+bot.on("polling_error", (err) => {
+  console.log("⚠ polling_error:", err.message);
+});
 
 // =========================
-// 🧠 UTIL
+// 🧠 DETECTAR LOJA
 // =========================
 function detectarLoja(url) {
   if (url.includes("mercadolivre") || url.includes("meli.la"))
@@ -51,10 +36,6 @@ function detectarLoja(url) {
     return "🟠 Amazon";
 
   return "🛒 Loja Online";
-}
-
-function limparLink(url) {
-  return url.split("?")[0];
 }
 
 // =========================
@@ -74,16 +55,14 @@ async function resolverLink(url) {
 }
 
 // =========================
-// 🖼 FALLBACK IMAGEM (SHOPEE / AMAZON)
+// 🖼 FALLBACK IMAGEM
 // =========================
 function fallbackImagem(loja) {
-  if (loja === "🟠 Amazon") {
+  if (loja === "🟠 Amazon")
     return "https://m.media-amazon.com/images/I/placeholder.jpg";
-  }
 
-  if (loja === "🟣 Shopee") {
+  if (loja === "🟣 Shopee")
     return "https://cf.shopee.com.br/file/placeholder";
-  }
 
   return "https://i.imgur.com/placeholder.png";
 }
@@ -107,7 +86,7 @@ async function pegarProduto(link) {
     const $ = cheerio.load(html);
 
     // =========================
-    // 🟡 MERCADO LIVRE (INTOCÁVEL — COMO VOCÊ QUER)
+    // 🟡 MERCADO LIVRE (INTACTO)
     // =========================
     if (loja === "🟡 Mercado Livre") {
       const titulo =
@@ -133,7 +112,7 @@ async function pegarProduto(link) {
     }
 
     // =========================
-    // 🟣 SHOPEE (CORRIGIDO + FALLBACK REGIÃO)
+    // 🟣 SHOPEE
     // =========================
     if (loja === "🟣 Shopee") {
       let titulo =
@@ -148,7 +127,6 @@ async function pegarProduto(link) {
 
       let precoMatch = html.match(/"price":"(.*?)"/);
 
-      // fallback região bloqueada
       if (!imagem || imagem.includes("not viewable")) {
         imagem = fallbackImagem(loja);
       }
@@ -164,7 +142,7 @@ async function pegarProduto(link) {
     }
 
     // =========================
-    // 🟠 AMAZON (CORRIGIDO + FALLBACK REGIÃO)
+    // 🟠 AMAZON
     // =========================
     if (loja === "🟠 Amazon") {
       let titulo =
@@ -179,7 +157,6 @@ async function pegarProduto(link) {
 
       let precoMatch = html.match(/"price":\s?([0-9.]+)/);
 
-      // fallback bloqueio região
       if (!imagem || imagem.includes("not viewable")) {
         imagem = fallbackImagem(loja);
       }
@@ -203,7 +180,7 @@ async function pegarProduto(link) {
 }
 
 // =========================
-// 🚀 BOT
+// 🚀 MENSAGEM
 // =========================
 bot.on("message", async (msg) => {
   try {
@@ -212,10 +189,7 @@ bot.on("message", async (msg) => {
     if (!text || text.startsWith("/")) return;
     if (!text.startsWith("http")) return;
 
-    const loading = await bot.sendMessage(
-      msg.chat.id,
-      "🔎 Buscando oferta..."
-    );
+    const loading = await bot.sendMessage(msg.chat.id, "🔎 Buscando oferta...");
 
     const p = await pegarProduto(text);
 
@@ -250,7 +224,7 @@ bot.on("message", async (msg) => {
           [
             {
               text: "🛒 VER OFERTA",
-              url: limparLink(p.link)
+              url: p.link.split("?")[0]
             }
           ]
         ]
