@@ -1,19 +1,19 @@
+const express = require("express");
+const bodyParser = require("body-parser");
 const TelegramBot = require("node-telegram-bot-api");
-const axios = require("axios");
 
-// 🔑 TOKEN DO BOT
 const token = process.env.BOT_TOKEN;
 
-// 🤖 BOT (evita erro de duplicação e mantém estável)
-const bot = new TelegramBot(token, {
-  polling: {
-    autoStart: true,
-    interval: 3000,
-    params: { timeout: 10 }
-  }
-});
+// 🌐 URL do seu servidor (Render / Railway / VPS)
+const URL = process.env.URL; // ex: https://seuapp.onrender.com
 
-console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
+const bot = new TelegramBot(token);
+
+// 🔥 Webhook ativo
+bot.setWebHook(`${URL}/bot${token}`);
+
+const app = express();
+app.use(bodyParser.json());
 
 // ================================
 // 🧠 DETECTA PLATAFORMA
@@ -55,24 +55,23 @@ ${p.link}
 }
 
 // ================================
-// 📦 MERCADO LIVRE (MANTIDO COMO ESTÁ)
+// 📦 MERCADO LIVRE (MANTIDO)
 // ================================
 async function processarMercadoLivre(url) {
-  try {
-    // ⚠️ NÃO ALTEREI SUA LÓGICA ORIGINAL
-    // só deixei seguro contra erro
-
-    return {
-      titulo: "Produto Mercado Livre",
-      preco: "Consulte",
-      link: url
-    };
-
-  } catch (err) {
-    console.log("Erro ML:", err.message);
-    return null;
-  }
+  return {
+    titulo: "Produto Mercado Livre",
+    preco: "Consulte",
+    link: url
+  };
 }
+
+// ================================
+// 📩 RECEBE UPDATES DO TELEGRAM
+// ================================
+app.post(`/bot${token}`, async (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
 
 // ================================
 // 🤖 COMANDO /promo
@@ -84,46 +83,26 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
   let produto = null;
 
-  try {
-
-    // 🏷️ MERCADO LIVRE (NÃO MEXIDO)
-    if (plataforma === "MERCADO_LIVRE") {
-      produto = await processarMercadoLivre(url);
-    }
-
-    // 🛍️ SHOPEE / AMAZON / SHEIN (GENÉRICO ESTÁVEL)
-    else {
-      produto = {
-        titulo: "Produto detectado automaticamente",
-        preco: null,
-        link: url
-      };
-    }
-
-    if (!produto) {
-      return bot.sendMessage(msg.chat.id, "❌ Erro ao processar produto");
-    }
-
-    const post = gerarCopy(produto, plataforma);
-
-    bot.sendMessage(msg.chat.id, post);
-
-  } catch (err) {
-    console.log(err);
-    bot.sendMessage(msg.chat.id, "❌ Erro geral ao processar produto");
+  if (plataforma === "MERCADO_LIVRE") {
+    produto = await processarMercadoLivre(url);
+  } else {
+    produto = {
+      titulo: "Produto detectado automaticamente",
+      preco: null,
+      link: url
+    };
   }
+
+  const post = gerarCopy(produto, plataforma);
+
+  bot.sendMessage(msg.chat.id, post);
 });
 
 // ================================
-// 🟢 START
+// 🚀 START SERVER
 // ================================
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id,
-`🔥 BOT DIVULGADOR ONLINE
+const PORT = process.env.PORT || 3000;
 
-Use:
-/promo link-do-produto
-
-Re Recomenda Ofertas 🛒`
-  );
+app.listen(PORT, () => {
+  console.log("🔥 BOT WEBHOOK ONLINE NA PORTA", PORT);
 });
