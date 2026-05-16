@@ -10,17 +10,34 @@ if (!token) {
 }
 
 // =========================
-// 🚀 BOT ESTÁVEL (ANTI ERROS RAILWAY)
+// 🚀 BOT ESTÁVEL
 // =========================
 const bot = new TelegramBot(token, {
   polling: {
-    interval: 3000,
     autoStart: true,
+    interval: 3000,
     params: {
       timeout: 10
     }
   }
 });
+
+// =========================
+// 🔥 LOGS DE ESTABILIDADE
+// =========================
+console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
+
+bot.on("polling_error", (err) => {
+  console.log("⚠ polling_error:", err.message);
+});
+
+bot.on("message", () => {
+  console.log("📩 mensagem recebida");
+});
+
+setTimeout(() => {
+  console.log("🚀 BOT REALMENTE ONLINE E ESCUTANDO MENSAGENS");
+}, 3000);
 
 // =========================
 // 🧨 PROTEÇÃO CONTRA CRASH
@@ -32,21 +49,6 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (err) => {
   console.log("⚠ unhandledRejection:", err.message);
 });
-
-// =========================
-// 🔥 INIT
-// =========================
-console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
-
-// limpa webhook antigo (IMPORTANTE)
-(async () => {
-  try {
-    await bot.deleteWebHook();
-    console.log("✅ Webhook limpo");
-  } catch {
-    console.log("ℹ Webhook já estava limpo");
-  }
-})();
 
 // =========================
 // 🧠 UTIL
@@ -75,7 +77,9 @@ async function resolverLink(url) {
   try {
     const res = await axios.get(url, {
       maxRedirects: 5,
-      headers: { "User-Agent": "Mozilla/5.0" }
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
     });
 
     return res.request?.res?.responseUrl || url;
@@ -85,7 +89,7 @@ async function resolverLink(url) {
 }
 
 // =========================
-// 📦 PEGAR PRODUTO
+// 📦 PRODUTO
 // =========================
 async function pegarProduto(link) {
   try {
@@ -108,7 +112,7 @@ async function pegarProduto(link) {
     let descricao = "";
 
     // =========================
-    // 🟡 MERCADO LIVRE (MANTIDO COMO VOCÊ QUERIA)
+    // 🟡 MERCADO LIVRE (IGUAL AO SEU ORIGINAL)
     // =========================
     if (loja === "🟡 Mercado Livre") {
 
@@ -128,7 +132,7 @@ async function pegarProduto(link) {
     }
 
     // =========================
-    // 🟣 SHOPEE (ESTÁVEL)
+    // 🟣 SHOPEE
     // =========================
     else if (loja === "🟣 Shopee") {
 
@@ -148,7 +152,7 @@ async function pegarProduto(link) {
     }
 
     // =========================
-    // 🟠 AMAZON (FALLBACK ESTÁVEL)
+    // 🟠 AMAZON
     // =========================
     else if (loja === "🟠 Amazon") {
 
