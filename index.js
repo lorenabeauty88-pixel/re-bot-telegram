@@ -11,29 +11,27 @@ const bot = new TelegramBot(token, { polling: true });
 
 console.log("🔥 BOT ACHADINHOS ONLINE");
 
-// /start
+// 🚀 COMANDO START
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
-    `🔥 BOT ACHADINHOS VIRAL 🔥
+    `🔥 BOT ACHADINHOS 🔥
 
 Envie assim:
 
-nome do produto
-preço
-link
-imagem
+PREÇO
+LINK
+IMAGEM
 
 EXEMPLO:
 
-Fone Bluetooth Gamer
 49.90
 https://meli.la/xxxxx
 https://i.imgur.com/teste.jpg`
   );
 });
 
-// mensagens
+// 🚀 MENSAGENS
 bot.on("message", async (msg) => {
   try {
     const text = msg.text;
@@ -45,27 +43,32 @@ bot.on("message", async (msg) => {
 
     const partes = text.split("\n");
 
-    if (partes.length < 4) {
+    // agora só precisa 3 linhas
+    if (partes.length < 3) {
       return bot.sendMessage(
         msg.chat.id,
-        "❌ Envie:\n\nnome\npreço\nlink\nimagem"
+        "❌ Envie:\n\nPREÇO\nLINK\nIMAGEM"
       );
     }
 
-    const nome = partes[0];
-    const preco = parseFloat(partes[1]);
-    const link = partes[2];
-    const imagem = partes[3];
+    const preco = parseFloat(partes[0]);
+    const link = partes[1];
+    const imagem = partes[2];
 
-    if (!nome || !preco || !link || !imagem) {
+    // nome automático
+    const nome = "🔥 OFERTA IMPERDÍVEL";
+
+    if (!preco || !link || !imagem) {
       return bot.sendMessage(
         msg.chat.id,
         "❌ Dados inválidos"
       );
     }
 
+    // preço fake antigo
     const precoAntigo = (preco * 1.6).toFixed(2);
 
+    // envia achadinho
     await bot.sendPhoto(msg.chat.id, imagem, {
       caption: `🔥 ACHADINHO DO DIA 🔥
 
