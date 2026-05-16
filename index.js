@@ -1,63 +1,101 @@
-const axios = require("axios");
+const TelegramBot = require("node-telegram-bot-api");
 
-// 🔥 resolve link encurtado de verdade
-async function resolverLink(url) {
-  try {
-    const res = await axios.get(url, {
-      maxRedirects: 10,
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
+const token = process.env.BOT_TOKEN;
 
-    return res.request.res.responseUrl || url;
-  } catch {
-    return url;
-  }
+if (!token) {
+  console.log("❌ BOT_TOKEN não encontrado");
+  process.exit(1);
 }
 
-// 🔍 extrai MLB do HTML final (FUNCIONA MESMO COM LINK CURTO)
-function extrairMLB(url) {
-  const match = url.match(/MLB\d+/i);
-  return match ? match[0] : null;
-}
+const bot = new TelegramBot(token, { polling: true });
 
-// 🚀 função REAL que funciona
-async function pegarProdutoML(link) {
+console.log("🔥 BOT ACHADINHOS ONLINE");
+
+// /start
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    `🔥 BOT ACHADINHOS VIRAL 🔥
+
+Envie assim:
+
+nome do produto
+preço
+link
+imagem
+
+EXEMPLO:
+
+Fone Bluetooth Gamer
+49.90
+https://meli.la/xxxxx
+https://i.imgur.com/teste.jpg`
+  );
+});
+
+// mensagens
+bot.on("message", async (msg) => {
   try {
-    const realLink = await resolverLink(link);
+    const text = msg.text;
 
-    // tenta pegar HTML da página final
-    const res = await axios.get(realLink, {
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
+    if (!text) return;
 
-    const html = res.data;
+    // ignora comandos
+    if (text.startsWith("/")) return;
 
-    const id = extrairMLB(html + realLink);
+    const partes = text.split("\n");
 
-    if (!id) {
-      console.log("❌ Não achou MLB no conteúdo");
-      return null;
+    if (partes.length < 4) {
+      return bot.sendMessage(
+        msg.chat.id,
+        "❌ Envie:\n\nnome\npreço\nlink\nimagem"
+      );
     }
 
-    const api = await axios.get(
-      `https://api.mercadolibre.com/items/${id}`
-    );
+    const nome = partes[0];
+    const preco = parseFloat(partes[1]);
+    const link = partes[2];
+    const imagem = partes[3];
 
-    const p = api.data;
+    if (!nome || !preco || !link || !imagem) {
+      return bot.sendMessage(
+        msg.chat.id,
+        "❌ Dados inválidos"
+      );
+    }
 
-    return {
-      nome: p.title,
-      preco: p.price,
-      imagem: p.pictures?.[0]?.url,
-      link: p.permalink
-    };
+    const precoAntigo = (preco * 1.6).toFixed(2);
+
+    await bot.sendPhoto(msg.chat.id, imagem, {
+      caption: `🔥 ACHADINHO DO DIA 🔥
+
+📦 ${nome}
+
+💰 DE: ~~R$ ${precoAntigo}~~
+🔥 POR: R$ ${preco.toFixed(2)}
+
+📉 DESCONTO IMPERDÍVEL
+
+⚡ Clique no botão abaixo`,
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🛒 COMPRAR AGORA",
+              url: link
+            }
+          ]
+        ]
+      }
+    });
 
   } catch (err) {
-    console.log("Erro final:", err.message);
-    return null;
+    console.log("ERRO:", err.message);
+
+    bot.sendMessage(
+      msg.chat.id,
+      "❌ Erro ao criar achadinho"
+    );
   }
-}
+});
