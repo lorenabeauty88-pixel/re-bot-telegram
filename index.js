@@ -1,4 +1,6 @@
 const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
+const cheerio = require("cheerio");
 
 const token = process.env.BOT_TOKEN;
 
@@ -7,98 +9,188 @@ if (!token) {
   process.exit(1);
 }
 
-const bot = new TelegramBot(token, { polling: true });
-
-console.log("🔥 BOT ACHADINHOS ONLINE");
-
-// 🚀 COMANDO START
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    `🔥 BOT ACHADINHOS 🔥
-
-Envie assim:
-
-PREÇO
-LINK
-IMAGEM
-
-EXEMPLO:
-
-49.90
-https://meli.la/xxxxx
-https://i.imgur.com/teste.jpg`
-  );
+const bot = new TelegramBot(token, {
+  polling: true
 });
 
-// 🚀 MENSAGENS
-bot.on("message", async (msg) => {
+console.log("🔥 DIVULGADOR INTELIGENTE ONLINE");
+
+// 🚀 resolve link encurtado
+async function resolverLink(url) {
   try {
+    const response = await axios.get(url, {
+      maxRedirects: 10,
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    return response.request.res.responseUrl || url;
+
+  } catch (err) {
+    console.log("Erro redirect:", err.message);
+    return url;
+  }
+}
+
+// 🚀 pega produto automaticamente
+async function pegarProduto(link) {
+  try {
+
+    const realLink = await resolverLink(link);
+
+    const response = await axios.get(realLink, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    const html = response.data;
+
+    const $ = cheerio.load(html);
+
+    // 🔥 título
+    let titulo =
+      $('meta[property="og:title"]').attr("content") ||
+      $("title").text() ||
+      "🔥 Oferta Imperdível";
+
+    // 🔥 imagem
+    let imagem =
+      $('meta[property="og:image"]').attr("content");
+
+    // 🔥 preço
+    let preco =
+      $('meta[property="product:price:amount"]').attr("content");
+
+    // fallback preço
+    if (!preco) {
+      const texto = html.match(/"price":\s?([0-9.]+)/);
+
+      if (texto) {
+        preco = texto[1];
+      }
+    }
+
+    return {
+      titulo,
+      preco: preco || "Promoção",
+      imagem,
+      link: realLink
+    };
+
+  } catch (err) {
+    console.log("Erro produto:", err.message);
+    return null;
+  }
+}
+
+// 🚀 recebe mensagem
+bot.on("message", async (msg) => {
+
+  try {
+
     const text = msg.text;
 
     if (!text) return;
 
-    // ignora comandos
-    if (text.startsWith("/")) return;
+    // aceita apenas links
+    if (!text.startsWith("http")) {
 
-    const partes = text.split("\n");
-
-    // agora só precisa 3 linhas
-    if (partes.length < 3) {
       return bot.sendMessage(
         msg.chat.id,
-        "❌ Envie:\n\nPREÇO\nLINK\nIMAGEM"
+        "❌ Envie um link do produto"
       );
     }
 
-    const preco = parseFloat(partes[0]);
-    const link = partes[1];
-    const imagem = partes[2];
+    // mensagem carregando
+    const loading = await bot.sendMessage(
+      msg.chat.id,
+      "🔎 Procurando produto..."
+    );
 
-    // nome automático
-    const nome = "🔥 OFERTA IMPERDÍVEL";
+    // pega produto
+    const p = await pegarProduto(text);
 
-    if (!preco || !link || !imagem) {
+    if (!p) {
+
       return bot.sendMessage(
         msg.chat.id,
-        "❌ Dados inválidos"
+        "❌ Não consegui ler esse produto"
       );
     }
 
-    // preço fake antigo
-    const precoAntigo = (preco * 1.6).toFixed(2);
+    // preço antigo fake
+    let precoAtual = parseFloat(p.preco);
 
-    // envia achadinho
-    await bot.sendPhoto(msg.chat.id, imagem, {
-      caption: `🔥 ACHADINHO DO DIA 🔥
+    if (isNaN(precoAtual)) {
+      precoAtual = 49.90;
+    }
 
-📦 ${nome}
+    const precoAntigo =
+      (precoAtual * 1.6).toFixed(2);
+
+    // remove loading
+    await bot.deleteMessage(
+      msg.chat.id,
+      loading.message_id
+    );
+
+    // envia produto
+    if (p.imagem) {
+
+      await bot.sendPhoto(msg.chat.id, p.imagem, {
+
+        caption: `🔥 ACHADINHO DO DIA 🔥
+
+📦 ${p.titulo}
 
 💰 DE: ~~R$ ${precoAntigo}~~
-🔥 POR: R$ ${preco.toFixed(2)}
+🔥 POR: R$ ${precoAtual.toFixed(2)}
 
 📉 DESCONTO IMPERDÍVEL
 
 ⚡ Clique no botão abaixo`,
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "🛒 COMPRAR AGORA",
-              url: link
-            }
+
+        parse_mode: "Markdown",
+
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🛒 COMPRAR AGORA",
+                url: p.link
+              }
+            ]
           ]
-        ]
-      }
-    });
+        }
+
+      });
+
+    } else {
+
+      // fallback sem imagem
+      await bot.sendMessage(msg.chat.id,
+
+        `🔥 ACHADINHO DO DIA 🔥
+
+📦 ${p.titulo}
+
+💰 R$ ${precoAtual.toFixed(2)}
+
+🔗 ${p.link}`
+
+      );
+    }
 
   } catch (err) {
-    console.log("ERRO:", err.message);
+
+    console.log("BOT ERROR:", err.message);
 
     bot.sendMessage(
       msg.chat.id,
-      "❌ Erro ao criar achadinho"
+      "❌ Erro ao processar produto"
     );
   }
+
 });
