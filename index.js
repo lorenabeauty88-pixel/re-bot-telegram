@@ -51,7 +51,18 @@ async function pegarProduto(link) {
 
     const realLink = await resolverLink(link);
 
-    const response = await axios.get(realLink, {
+   const response = await axios.get(realLink, {
+
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+
+    "Accept-Language": "pt-BR,pt;q=0.9",
+
+    "Referer": "https://google.com"
+  }
+
+});
       headers: {
         "User-Agent": "Mozilla/5.0"
       }
@@ -78,7 +89,31 @@ if (link.includes("shopee")) {
 }
 
     // 🔥 título
-    let titulo =
+    // fallback Shopee
+if (realLink.includes("shopee")) {
+
+  const tituloShopee =
+    html.match(/"name":"(.*?)"/);
+
+  const imagemShopee =
+    html.match(/"image":"(.*?)"/);
+
+  const precoShopee =
+    html.match(/"price":"(.*?)"/);
+
+  if (tituloShopee) {
+    titulo = tituloShopee[1];
+  }
+
+  if (imagemShopee) {
+    imagem = imagemShopee[1]
+      .replace(/\\u002F/g, "/");
+  }
+
+  if (precoShopee) {
+    preco = precoShopee[1];
+  }
+}
       $('meta[property="og:title"]').attr("content") ||
       $("title").text() ||
       "🔥 Oferta Imperdível";
