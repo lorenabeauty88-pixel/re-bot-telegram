@@ -16,39 +16,22 @@ const bot = new TelegramBot(token, {
   polling: {
     autoStart: true,
     interval: 3000,
-    params: {
-      timeout: 10
-    }
+    params: { timeout: 10 }
   }
 });
 
-// =========================
-// 🔥 LOGS DE ESTABILIDADE
-// =========================
 console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
 
-bot.on("polling_error", (err) => {
-  console.log("⚠ polling_error:", err.message);
-});
-
-bot.on("message", () => {
-  console.log("📩 mensagem recebida");
-});
-
-setTimeout(() => {
-  console.log("🚀 BOT REALMENTE ONLINE E ESCUTANDO MENSAGENS");
-}, 3000);
-
 // =========================
-// 🧨 PROTEÇÃO CONTRA CRASH
+// 🧨 PROTEÇÃO
 // =========================
-process.on("uncaughtException", (err) => {
-  console.log("⚠ uncaughtException:", err.message);
-});
+process.on("uncaughtException", err =>
+  console.log("⚠ uncaughtException:", err.message)
+);
 
-process.on("unhandledRejection", (err) => {
-  console.log("⚠ unhandledRejection:", err.message);
-});
+process.on("unhandledRejection", err =>
+  console.log("⚠ unhandledRejection:", err.message)
+);
 
 // =========================
 // 🧠 UTIL
@@ -77,15 +60,28 @@ async function resolverLink(url) {
   try {
     const res = await axios.get(url, {
       maxRedirects: 5,
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
+      headers: { "User-Agent": "Mozilla/5.0" }
     });
 
     return res.request?.res?.responseUrl || url;
   } catch {
     return url;
   }
+}
+
+// =========================
+// 🖼 FALLBACK IMAGEM (SHOPEE / AMAZON)
+// =========================
+function fallbackImagem(loja) {
+  if (loja === "🟠 Amazon") {
+    return "https://m.media-amazon.com/images/I/placeholder.jpg";
+  }
+
+  if (loja === "🟣 Shopee") {
+    return "https://cf.shopee.com.br/file/placeholder";
+  }
+
+  return "https://i.imgur.com/placeholder.png";
 }
 
 // =========================
@@ -106,79 +102,95 @@ async function pegarProduto(link) {
     const html = res.data;
     const $ = cheerio.load(html);
 
-    let titulo = "🔥 Oferta Imperdível";
-    let imagem = "https://i.imgur.com/placeholder.png";
-    let preco = 49.9;
-    let descricao = "";
-
     // =========================
-    // 🟡 MERCADO LIVRE (IGUAL AO SEU ORIGINAL)
+    // 🟡 MERCADO LIVRE (INTOCÁVEL — COMO VOCÊ QUER)
     // =========================
     if (loja === "🟡 Mercado Livre") {
-
-      titulo =
+      const titulo =
         $('meta[property="og:title"]').attr("content") ||
         $("title").text();
 
-      imagem =
-        $('meta[property="og:image"]').attr("content") ||
-        imagem;
+      const imagem =
+        $('meta[property="og:image"]').attr("content");
 
-      descricao =
+      const descricao =
         $('meta[name="description"]').attr("content") || "";
 
-      const p = html.match(/"price":\s?([0-9.]+)/);
-      if (p) preco = parseFloat(p[1]);
+      const precoMatch = html.match(/"price":\s?([0-9.]+)/);
+
+      return {
+        titulo,
+        imagem,
+        preco: precoMatch ? parseFloat(precoMatch[1]) : 49.9,
+        descricao,
+        link: realLink,
+        loja
+      };
     }
 
     // =========================
-    // 🟣 SHOPEE
+    // 🟣 SHOPEE (CORRIGIDO + FALLBACK REGIÃO)
     // =========================
-    else if (loja === "🟣 Shopee") {
-
-      titulo =
+    if (loja === "🟣 Shopee") {
+      let titulo =
         $('meta[property="og:title"]').attr("content") ||
         "🔥 Produto Shopee";
 
-      imagem =
-        $('meta[property="og:image"]').attr("content") ||
-        imagem;
+      let imagem =
+        $('meta[property="og:image"]').attr("content");
 
-      descricao =
+      let descricao =
         $('meta[name="description"]').attr("content") || "";
 
-      const p = html.match(/"price":"(.*?)"/);
-      if (p) preco = parseFloat(p[1]);
+      let precoMatch = html.match(/"price":"(.*?)"/);
+
+      // fallback região bloqueada
+      if (!imagem || imagem.includes("not viewable")) {
+        imagem = fallbackImagem(loja);
+      }
+
+      return {
+        titulo,
+        imagem,
+        preco: precoMatch ? parseFloat(precoMatch[1]) : 49.9,
+        descricao,
+        link: realLink,
+        loja
+      };
     }
 
     // =========================
-    // 🟠 AMAZON
+    // 🟠 AMAZON (CORRIGIDO + FALLBACK REGIÃO)
     // =========================
-    else if (loja === "🟠 Amazon") {
-
-      titulo =
+    if (loja === "🟠 Amazon") {
+      let titulo =
         $('meta[property="og:title"]').attr("content") ||
         "🔥 Produto Amazon";
 
-      imagem =
-        $('meta[property="og:image"]').attr("content") ||
-        imagem;
+      let imagem =
+        $('meta[property="og:image"]').attr("content");
 
-      descricao =
+      let descricao =
         $('meta[name="description"]').attr("content") || "";
 
-      const p = html.match(/"price":\s?([0-9.]+)/);
-      if (p) preco = parseFloat(p[1]);
+      let precoMatch = html.match(/"price":\s?([0-9.]+)/);
+
+      // fallback bloqueio região
+      if (!imagem || imagem.includes("not viewable")) {
+        imagem = fallbackImagem(loja);
+      }
+
+      return {
+        titulo,
+        imagem,
+        preco: precoMatch ? parseFloat(precoMatch[1]) : 49.9,
+        descricao,
+        link: realLink,
+        loja
+      };
     }
 
-    return {
-      titulo,
-      imagem,
-      preco,
-      descricao,
-      link: realLink,
-      loja
-    };
+    return null;
 
   } catch (err) {
     console.log("❌ Erro produto:", err.message);
@@ -187,7 +199,7 @@ async function pegarProduto(link) {
 }
 
 // =========================
-// 🚀 MENSAGEM
+// 🚀 BOT
 // =========================
 bot.on("message", async (msg) => {
   try {
@@ -219,7 +231,7 @@ bot.on("message", async (msg) => {
 
 📦 ${p.titulo}
 
-📝 ${p.descricao ? p.descricao.slice(0, 120) + "..." : "Produto recomendado"}
+📝 ${p.descricao ? p.descricao.slice(0, 120) + "..." : ""}
 
 💰 DE: ~~R$ ${precoAntigo}~~
 🔥 POR: R$ ${precoAtual.toFixed(2)}
