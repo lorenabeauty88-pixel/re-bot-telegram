@@ -9,20 +9,48 @@ if (!token) {
   process.exit(1);
 }
 
-// 🚀 BOT ESTÁVEL
+// =========================
+// 🚀 BOT ESTÁVEL (ANTI ERROS RAILWAY)
+// =========================
 const bot = new TelegramBot(token, {
   polling: {
+    interval: 3000,
     autoStart: true,
-    interval: 2000
+    params: {
+      timeout: 10
+    }
   }
 });
 
+// =========================
+// 🧨 PROTEÇÃO CONTRA CRASH
+// =========================
+process.on("uncaughtException", (err) => {
+  console.log("⚠ uncaughtException:", err.message);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.log("⚠ unhandledRejection:", err.message);
+});
+
+// =========================
+// 🔥 INIT
+// =========================
 console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
+
+// limpa webhook antigo (IMPORTANTE)
+(async () => {
+  try {
+    await bot.deleteWebHook();
+    console.log("✅ Webhook limpo");
+  } catch {
+    console.log("ℹ Webhook já estava limpo");
+  }
+})();
 
 // =========================
 // 🧠 UTIL
 // =========================
-
 function detectarLoja(url) {
   if (url.includes("mercadolivre") || url.includes("meli.la"))
     return "🟡 Mercado Livre";
@@ -43,7 +71,6 @@ function limparLink(url) {
 // =========================
 // 🔁 RESOLVER LINK
 // =========================
-
 async function resolverLink(url) {
   try {
     const res = await axios.get(url, {
@@ -58,9 +85,8 @@ async function resolverLink(url) {
 }
 
 // =========================
-// 📦 PRODUTO
+// 📦 PEGAR PRODUTO
 // =========================
-
 async function pegarProduto(link) {
   try {
     const realLink = await resolverLink(link);
@@ -77,12 +103,12 @@ async function pegarProduto(link) {
     const $ = cheerio.load(html);
 
     let titulo = "🔥 Oferta Imperdível";
-    let imagem = null;
+    let imagem = "https://i.imgur.com/placeholder.png";
     let preco = 49.9;
     let descricao = "";
 
     // =========================
-    // 🟡 MERCADO LIVRE (ORIGINAL COMO VOCÊ GOSTOU)
+    // 🟡 MERCADO LIVRE (MANTIDO COMO VOCÊ QUERIA)
     // =========================
     if (loja === "🟡 Mercado Livre") {
 
@@ -91,7 +117,8 @@ async function pegarProduto(link) {
         $("title").text();
 
       imagem =
-        $('meta[property="og:image"]').attr("content");
+        $('meta[property="og:image"]').attr("content") ||
+        imagem;
 
       descricao =
         $('meta[name="description"]').attr("content") || "";
@@ -111,7 +138,7 @@ async function pegarProduto(link) {
 
       imagem =
         $('meta[property="og:image"]').attr("content") ||
-        "https://i.imgur.com/placeholder.png";
+        imagem;
 
       descricao =
         $('meta[name="description"]').attr("content") || "";
@@ -121,7 +148,7 @@ async function pegarProduto(link) {
     }
 
     // =========================
-    // 🟠 AMAZON (FALLBACK SIMPLES)
+    // 🟠 AMAZON (FALLBACK ESTÁVEL)
     // =========================
     else if (loja === "🟠 Amazon") {
 
@@ -131,7 +158,7 @@ async function pegarProduto(link) {
 
       imagem =
         $('meta[property="og:image"]').attr("content") ||
-        "https://i.imgur.com/placeholder.png";
+        imagem;
 
       descricao =
         $('meta[name="description"]').attr("content") || "";
@@ -150,15 +177,14 @@ async function pegarProduto(link) {
     };
 
   } catch (err) {
-    console.log("Erro produto:", err.message);
+    console.log("❌ Erro produto:", err.message);
     return null;
   }
 }
 
 // =========================
-// 🚀 BOT MENSAGEM
+// 🚀 MENSAGEM
 // =========================
-
 bot.on("message", async (msg) => {
   try {
     const text = msg.text;
@@ -196,9 +222,7 @@ bot.on("message", async (msg) => {
 
 ⚡ Oferta limitada`;
 
-    const imagem = p.imagem || "https://i.imgur.com/placeholder.png";
-
-    await bot.sendPhoto(msg.chat.id, imagem, {
+    await bot.sendPhoto(msg.chat.id, p.imagem, {
       caption,
       parse_mode: "Markdown",
       reply_markup: {
