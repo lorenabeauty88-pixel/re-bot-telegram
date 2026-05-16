@@ -1,19 +1,30 @@
-const express = require("express");
-const bodyParser = require("body-parser");
 const TelegramBot = require("node-telegram-bot-api");
+const express = require("express");
 
 const token = process.env.BOT_TOKEN;
+const URL = process.env.URL; // https://seu-app.onrender.com
 
-// 🌐 URL do seu servidor (Render / Railway / VPS)
-const URL = process.env.URL; // ex: https://seuapp.onrender.com
+if (!token || !URL) {
+  console.log("❌ Faltando BOT_TOKEN ou URL nas variáveis de ambiente");
+  process.exit(1);
+}
 
+// 🔥 inicia bot SEM polling (webhook only)
 const bot = new TelegramBot(token);
 
-// 🔥 Webhook ativo
-bot.setWebHook(`${URL}/bot${token}`);
-
+// ================================
+// 🌐 EXPRESS SERVER
+// ================================
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
+
+// webhook endpoint
+const webhookPath = `/bot${token}`;
+
+app.post(webhookPath, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
 
 // ================================
 // 🧠 DETECTA PLATAFORMA
@@ -27,9 +38,9 @@ function detectarPlataforma(url) {
 }
 
 // ================================
-// 💎 COPY VIRAL
+// 💎 COPY SIMPLES E ESTÁVEL
 // ================================
-function gerarCopy(p, plataforma) {
+function gerarCopy(url, plataforma) {
 
   let emoji = "🛒";
 
@@ -39,39 +50,15 @@ function gerarCopy(p, plataforma) {
   if (plataforma === "MERCADO_LIVRE") emoji = "🏷️";
 
   return `
-🚨 ${plataforma} OFERTA QUENTE 🚨
+🚨 ${plataforma} OFERTA
 
-${emoji} ${p.titulo}
+${emoji} Produto detectado automaticamente
 
-💰 Preço: R$ ${p.preco || "ver no link"}
-
-⚡ Oferta por tempo limitado
+🔗 ${url}
 
 🔥 Re Recomenda Ofertas
-
-👇 Clique aqui:
-${p.link}
 `;
 }
-
-// ================================
-// 📦 MERCADO LIVRE (MANTIDO)
-// ================================
-async function processarMercadoLivre(url) {
-  return {
-    titulo: "Produto Mercado Livre",
-    preco: "Consulte",
-    link: url
-  };
-}
-
-// ================================
-// 📩 RECEBE UPDATES DO TELEGRAM
-// ================================
-app.post(`/bot${token}`, async (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
 
 // ================================
 // 🤖 COMANDO /promo
@@ -81,28 +68,25 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
   const url = match[1];
   const plataforma = detectarPlataforma(url);
 
-  let produto = null;
-
-  if (plataforma === "MERCADO_LIVRE") {
-    produto = await processarMercadoLivre(url);
-  } else {
-    produto = {
-      titulo: "Produto detectado automaticamente",
-      preco: null,
-      link: url
-    };
-  }
-
-  const post = gerarCopy(produto, plataforma);
+  const post = gerarCopy(url, plataforma);
 
   bot.sendMessage(msg.chat.id, post);
 });
 
 // ================================
-// 🚀 START SERVER
+// 🚀 START SERVER + WEBHOOK
 // ================================
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log("🔥 BOT WEBHOOK ONLINE NA PORTA", PORT);
+
+  const webhookURL = `${URL}${webhookPath}`;
+
+  try {
+    await bot.setWebHook(webhookURL);
+    console.log("✅ WEBHOOK ATIVADO:", webhookURL);
+  } catch (err) {
+    console.log("❌ ERRO WEBHOOK:", err.message);
+  }
 });
