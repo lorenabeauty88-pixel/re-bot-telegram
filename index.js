@@ -15,14 +15,14 @@ const bot = new TelegramBot(token);
 // 🔥 remove webhook antigo
 bot.deleteWebHook();
 
-// 🚀 inicia polling correto
+// 🚀 inicia polling
 bot.startPolling({
   restart: true
 });
 
 console.log("🔥 DIVULGADOR INTELIGENTE ONLINE");
 
-// 🚀 resolve link encurtado
+// 🚀 resolve links encurtados
 async function resolverLink(url) {
 
   try {
@@ -30,7 +30,8 @@ async function resolverLink(url) {
     const response = await axios.get(url, {
       maxRedirects: 10,
       headers: {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
       }
     });
 
@@ -44,89 +45,61 @@ async function resolverLink(url) {
   }
 }
 
-// 🚀 pega dados do produto
+// 🚀 pega produto
 async function pegarProduto(link) {
 
   try {
 
     const realLink = await resolverLink(link);
 
-   const response = await axios.get(realLink, {
-
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-
-    "Accept-Language": "pt-BR,pt;q=0.9",
-
-    "Referer": "https://google.com"
-  }
-
-});
+    const response = await axios.get(realLink, {
       headers: {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+
+        "Accept-Language": "pt-BR,pt;q=0.9",
+
+        "Referer": "https://google.com"
       }
     });
 
     const html = response.data;
 
-    // detecta loja
-let loja = "🛒 Loja Online";
+    const $ = cheerio.load(html);
 
-if (
-  link.includes("mercadolivre") ||
-  link.includes("meli.la")
-) {
-  loja = "🟡 Mercado Livre";
-}
+    // 🚀 detecta loja
+    let loja = "🛒 Loja Online";
 
-if (link.includes("amazon")) {
-  loja = "🟠 Amazon";
-}
+    if (
+      realLink.includes("mercadolivre") ||
+      realLink.includes("meli.la")
+    ) {
+      loja = "🟡 Mercado Livre";
+    }
 
-if (link.includes("shopee")) {
-  loja = "🟣 Shopee";
-}
+    if (realLink.includes("amazon")) {
+      loja = "🟠 Amazon";
+    }
 
-    // 🔥 título
-    // fallback Shopee
-if (realLink.includes("shopee")) {
+    if (realLink.includes("shopee")) {
+      loja = "🟣 Shopee";
+    }
 
-  const tituloShopee =
-    html.match(/"name":"(.*?)"/);
-
-  const imagemShopee =
-    html.match(/"image":"(.*?)"/);
-
-  const precoShopee =
-    html.match(/"price":"(.*?)"/);
-
-  if (tituloShopee) {
-    titulo = tituloShopee[1];
-  }
-
-  if (imagemShopee) {
-    imagem = imagemShopee[1]
-      .replace(/\\u002F/g, "/");
-  }
-
-  if (precoShopee) {
-    preco = precoShopee[1];
-  }
-}
+    // 🚀 título
+    let titulo =
       $('meta[property="og:title"]').attr("content") ||
       $("title").text() ||
       "🔥 Oferta Imperdível";
 
-    // 🔥 imagem
+    // 🚀 imagem
     let imagem =
       $('meta[property="og:image"]').attr("content");
 
-    // 🔥 preço
+    // 🚀 preço
     let preco =
       $('meta[property="product:price:amount"]').attr("content");
 
-    // fallback preço
+    // 🚀 fallback preço
     if (!preco) {
 
       const match = html.match(/"price":\s?([0-9.]+)/);
@@ -136,13 +109,40 @@ if (realLink.includes("shopee")) {
       }
     }
 
- return {
-  titulo,
-  preco: preco || "49.90",
-  imagem,
-  link: realLink,
-  loja
-};
+    // 🚀 fallback Shopee
+    if (realLink.includes("shopee")) {
+
+      const tituloShopee =
+        html.match(/"name":"(.*?)"/);
+
+      const imagemShopee =
+        html.match(/"image":"(.*?)"/);
+
+      const precoShopee =
+        html.match(/"price":"(.*?)"/);
+
+      if (tituloShopee) {
+        titulo = tituloShopee[1];
+      }
+
+      if (imagemShopee) {
+        imagem = imagemShopee[1]
+          .replace(/\\u002F/g, "/");
+      }
+
+      if (precoShopee) {
+        preco = precoShopee[1];
+      }
+    }
+
+    return {
+      titulo,
+      preco: preco || "49.90",
+      imagem,
+      link: realLink,
+      loja
+    };
+
   } catch (err) {
 
     console.log("Erro produto:", err.message);
@@ -156,7 +156,8 @@ bot.onText(/\/start/, (msg) => {
 
   bot.sendMessage(
     msg.chat.id,
-    `🔥 DIVULGADOR INTELIGENTE 🔥
+
+`🔥 DIVULGADOR INTELIGENTE 🔥
 
 Envie apenas o link do produto:
 
@@ -218,7 +219,7 @@ bot.on("message", async (msg) => {
       precoAtual = 49.90;
     }
 
-    // preço fake antigo
+    // preço antigo fake
     const precoAntigo =
       (precoAtual * 1.6).toFixed(2);
 
@@ -227,7 +228,8 @@ bot.on("message", async (msg) => {
 
       await bot.sendPhoto(msg.chat.id, p.imagem, {
 
-        caption: `🔥 ACHADINHO DO DIA 🔥
+        caption:
+`🔥 ACHADINHO DO DIA 🔥
 
 🏪 ${p.loja}
 
@@ -258,16 +260,19 @@ bot.on("message", async (msg) => {
     } else {
 
       // fallback sem imagem
-      await bot.sendMessage(msg.chat.id,
+      await bot.sendMessage(
 
-        `🔥 ACHADINHO DO DIA 🔥
+        msg.chat.id,
+
+`🔥 ACHADINHO DO DIA 🔥
+
+🏪 ${p.loja}
 
 📦 ${p.titulo}
 
 💰 R$ ${precoAtual.toFixed(2)}
 
 🔗 ${p.link}`
-
       );
     }
 
