@@ -9,28 +9,26 @@ if (!token) {
   process.exit(1);
 }
 
-// 🚀 BOT (estável no Railway)
+// 🚀 BOT
 const bot = new TelegramBot(token, { polling: true });
 
 console.log("🔥 DIVULGADOR INTELIGENTE ONLINE");
 
-// 🔥 resolve links encurtados
+// 🔥 resolver redirects
 async function resolverLink(url) {
   try {
     const res = await axios.get(url, {
       maxRedirects: 10,
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
+      headers: { "User-Agent": "Mozilla/5.0" }
     });
 
     return res.request.res.responseUrl || url;
-  } catch (err) {
+  } catch {
     return url;
   }
 }
 
-// 🔥 pega produto
+// 🔥 pegar produto
 async function pegarProduto(link) {
   try {
     const realLink = await resolverLink(link);
@@ -63,7 +61,8 @@ async function pegarProduto(link) {
       "🔥 Oferta Imperdível";
 
     // 🖼 imagem
-    let imagem = $('meta[property="og:image"]').attr("content");
+    let imagem =
+      $('meta[property="og:image"]').attr("content");
 
     // 💰 preço
     let preco =
@@ -74,7 +73,7 @@ async function pegarProduto(link) {
       if (match) preco = match[1];
     }
 
-    // 🟡 Mercado Livre (melhor leitura)
+    // 🟡 MERCADO LIVRE (NÃO MEXIDO)
     if (realLink.includes("mercadolivre") || realLink.includes("meli.la")) {
       const t = html.match(/"name":"(.*?)"/);
       const p = html.match(/"price":\s?([0-9.]+)/);
@@ -85,7 +84,7 @@ async function pegarProduto(link) {
       if (i) imagem = i[1].replace(/\\u002F/g, "/");
     }
 
-    // 🟣 Shopee (corrigido e limpo)
+    // 🟣 SHOPEE (corrigido)
     if (realLink.includes("shopee")) {
       const t = html.match(/"name":"(.*?)"/);
       const i = html.match(/"image":"(.*?)"/);
@@ -107,7 +106,7 @@ async function pegarProduto(link) {
     };
 
   } catch (err) {
-    console.log("Erro:", err.message);
+    console.log("Erro produto:", err.message);
     return null;
   }
 }
@@ -129,10 +128,11 @@ Envie o link do produto:
 // 🚀 mensagens
 bot.on("message", async (msg) => {
   const text = msg.text;
+
   if (!text || text.startsWith("/")) return;
   if (!text.startsWith("http")) return;
 
-  const loading = await bot.sendMessage(msg.chat.id, "🔎 Buscando oferta...");
+  const loading = await bot.sendMessage(msg.chat.id, "🔎 RECOMENDA procurando oferta...");
 
   const p = await pegarProduto(text);
 
@@ -147,8 +147,9 @@ bot.on("message", async (msg) => {
 
   const linkFinal = p.link.split("?")[0];
 
+  // 💥 MENSAGEM PADRÃO PRO
   const caption =
-`🔥 ACHADINHO DO DIA 🔥
+`🔥 RECOMENDAÇÃO DO DIA 🔥
 
 🏪 ${p.loja}
 
@@ -157,19 +158,26 @@ bot.on("message", async (msg) => {
 💰 DE: ~~R$ ${precoAntigo}~~
 🔥 POR: R$ ${precoAtual.toFixed(2)}
 
-⚡ Oferta por tempo limitado`;
+⚡ RECOMENDAÇÃO ESPECIAL
+⏳ Oferta por tempo limitado`;
 
-  if (p.imagem) {
-    await bot.sendPhoto(msg.chat.id, p.imagem, {
-      caption,
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🛒 COMPRAR AGORA", url: linkFinal }]
+  // 🚀 IMAGEM FORÇADA (NUNCA SEPARA MENSAGEM)
+  const imagemFinal =
+    p.imagem ||
+    "https://via.placeholder.com/600x600.png?text=ACHADINHO+DO+DIA";
+
+  await bot.sendPhoto(msg.chat.id, imagemFinal, {
+    caption,
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "🛒 COMPRAR AGORA",
+            url: linkFinal
+          }
         ]
-      }
-    });
-  } else {
-    await bot.sendMessage(msg.chat.id, caption + `\n\n🔗 ${linkFinal}`);
-  }
+      ]
+    }
+  });
 });
