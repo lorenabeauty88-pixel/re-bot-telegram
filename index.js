@@ -114,7 +114,89 @@ async function pegarProduto(link) {
 
       const tituloShopee =
         html.match(/"name":"(.*?)"/);
+// 🚀 título
+let titulo =
+  $('meta[property="og:title"]').attr("content") ||
+  $('meta[name="title"]').attr("content") ||
+  $("title").text();
 
+// 🚀 imagem
+let imagem =
+  $('meta[property="og:image"]').attr("content");
+
+// 🚀 preço
+let preco =
+  $('meta[property="product:price:amount"]').attr("content");
+
+// 🚀 fallback Mercado Livre
+if (
+  realLink.includes("mercadolivre") ||
+  realLink.includes("meli.la")
+) {
+
+  const tituloML =
+    html.match(/"name":"(.*?)"/);
+
+  const precoML =
+    html.match(/"price":\s?([0-9.]+)/);
+
+  const imagemML =
+    html.match(/"image":"(.*?)"/);
+
+  if (tituloML) {
+    titulo = tituloML[1];
+  }
+
+  if (precoML) {
+    preco = precoML[1];
+  }
+
+  if (imagemML) {
+    imagem = imagemML[1]
+      .replace(/\\u002F/g, "/");
+  }
+}
+
+// 🚀 fallback Shopee
+if (realLink.includes("shopee")) {
+
+  const tituloShopee =
+    html.match(/"name":"(.*?)"/);
+
+  const imagemShopee =
+    html.match(/"image":"(.*?)"/);
+
+  const precoShopee =
+    html.match(/"price":"(.*?)"/);
+
+  if (tituloShopee) {
+    titulo = tituloShopee[1];
+  }
+
+  if (imagemShopee) {
+    imagem = imagemShopee[1]
+      .replace(/\\u002F/g, "/");
+  }
+
+  if (precoShopee) {
+    preco = precoShopee[1];
+  }
+}
+
+// 🚀 fallback geral
+if (!preco) {
+
+  const match = html.match(/"price":\s?([0-9.]+)/);
+
+  if (match) {
+    preco = match[1];
+  }
+}
+
+// 🚀 fallback final
+if (!titulo) {
+  titulo = "🔥 Oferta Imperdível";
+}
       const imagemShopee =
         html.match(/"image":"(.*?)"/);
 
