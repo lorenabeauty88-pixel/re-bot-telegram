@@ -13,10 +13,10 @@ const bot = new TelegramBot(token, {
   polling: true
 });
 
-console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
+console.log("🔥 DIVULGADOR VIRAL PROFISSIONAL ONLINE");
 
 // =========================
-// 🧠 LOJA
+// 🧠 DETECTA LOJA
 // =========================
 function detectarLoja(url) {
   if (url.includes("mercadolivre") || url.includes("meli.la"))
@@ -32,7 +32,7 @@ function detectarLoja(url) {
 }
 
 // =========================
-// 🔁 LINK
+// 🔁 RESOLVE LINK
 // =========================
 async function resolverLink(url) {
   try {
@@ -61,71 +61,45 @@ function fallbackImagem(loja) {
 }
 
 // =========================
-// 💎 COPY INTELIGENTE
+// 🔥 VIRAL ENGINE
 // =========================
-function gerarCopy(p, precoAtual, precoAntigo) {
+function analisarProduto(p, precoAtual, precoAntigo) {
 
   const desconto = ((precoAntigo - precoAtual) / precoAntigo) * 100;
 
-  let vibe = "normal";
+  let nivel = "NORMAL";
+  let emoji = "🛒";
+  let aviso = "Recomendado do dia";
 
-  if (desconto >= 60) vibe = "ultra";
-  else if (desconto >= 40) vibe = "alto";
-  else if (desconto >= 20) vibe = "medio";
-
-  if (vibe === "ultra") {
-    return `🚨🔥 OFERTA INSANA LIBERADA 🔥🚨
-
-🏪 ${p.loja}
-
-📦 ${p.titulo}
-
-💣 DESCONTO IMPERDÍVEL HOJE
-
-💰 DE: ~~R$ ${precoAntigo}~~
-🔥 POR: *R$ ${precoAtual.toFixed(2)}*
-
-⚠️ Pode acabar a qualquer momento
-
-👇 GARANTIR AGORA`;
+  if (desconto >= 60) {
+    nivel = "🔥 HOT VIRAL";
+    emoji = "🚨";
+    aviso = "OFERTA EXPLODIU HOJE";
+  } 
+  else if (desconto >= 40) {
+    nivel = "🔥 MUITO BOM";
+    emoji = "🔥";
+    aviso = "DESCONTO FORTE";
+  } 
+  else if (desconto >= 20) {
+    nivel = "⭐ BOM";
+    emoji = "⭐";
+    aviso = "Boa oferta";
   }
 
-  if (vibe === "alto") {
-    return `🔥 ACHADINHO MUITO BOM 🔥
+  let tituloFinal = p.titulo || "Produto";
 
-🏪 ${p.loja}
-
-📦 ${p.titulo}
-
-💰 DE: ~~R$ ${precoAntigo}~~
-🔥 POR: *R$ ${precoAtual.toFixed(2)}*
-
-📉 ÓTIMO DESCONTO HOJE
-
-👇 Ver oferta`;
+  if (tituloFinal.length > 80) {
+    tituloFinal = tituloFinal.substring(0, 80) + "...";
   }
 
-  if (vibe === "medio") {
-    return `✨ RECOMENDAÇÃO DO DIA ✨
-
-🏪 ${p.loja}
-
-📦 ${p.titulo}
-
-💰 Por apenas *R$ ${precoAtual.toFixed(2)}*
-
-👇 Confira`;
-  }
-
-  return `🛒 PRODUTO EM DESTAQUE
-
-🏪 ${p.loja}
-
-📦 ${p.titulo}
-
-💰 R$ ${precoAtual.toFixed(2)}
-
-👇 Ver oferta`;
+  return {
+    nivel,
+    emoji,
+    aviso,
+    tituloFinal,
+    desconto: desconto.toFixed(0)
+  };
 }
 
 // =========================
@@ -177,13 +151,12 @@ async function pegarProduto(link) {
     }
 
     // =========================
-    // 🟣 SHOPEE (SAFE)
+    // 🟣 SHOPEE SAFE
     // =========================
     if (loja === "🟣 Shopee") {
       return {
         titulo: "🔥 Produto Shopee",
         imagem: fallbackImagem(loja),
-        descricao: "",
         preco: 49.9,
         link: realLink,
         loja
@@ -191,13 +164,12 @@ async function pegarProduto(link) {
     }
 
     // =========================
-    // 🟠 AMAZON (SAFE)
+    // 🟠 AMAZON SAFE
     // =========================
     if (loja === "🟠 Amazon") {
       return {
         titulo: "🔥 Produto Amazon",
         imagem: fallbackImagem(loja),
-        descricao: "",
         preco: 49.9,
         link: realLink,
         loja
@@ -213,7 +185,7 @@ async function pegarProduto(link) {
 }
 
 // =========================
-// 🚀 MENSAGEM
+// 🚀 MENSAGENS
 // =========================
 bot.on("message", async (msg) => {
   try {
@@ -222,7 +194,7 @@ bot.on("message", async (msg) => {
     if (!text || text.startsWith("/")) return;
     if (!text.startsWith("http")) return;
 
-    const loading = await bot.sendMessage(msg.chat.id, "🔎 Buscando produto...");
+    const loading = await bot.sendMessage(msg.chat.id, "🔎 Buscando produto viral...");
 
     const p = await pegarProduto(text);
 
@@ -235,7 +207,25 @@ bot.on("message", async (msg) => {
     const precoAtual = parseFloat(p.preco) || 49.9;
     const precoAntigo = (precoAtual * 1.6).toFixed(2);
 
-    const caption = gerarCopy(p, precoAtual, precoAntigo);
+    const v = analisarProduto(p, precoAtual, precoAntigo);
+
+    const caption =
+`${v.emoji} ${v.nivel} ${v.emoji}
+
+🏪 ${p.loja}
+
+📦 ${v.tituloFinal}
+
+⚡ ${v.aviso}
+
+💰 DE: ~~R$ ${precoAntigo}~~
+🔥 POR: *R$ ${precoAtual.toFixed(2)}*
+
+📊 DESCONTO: ${v.desconto}%
+
+⚠️ Oferta pode sair do ar a qualquer momento
+
+👇 Clique abaixo e aproveite agora`;
 
     await bot.sendPhoto(msg.chat.id, p.imagem, {
       caption,
@@ -244,7 +234,7 @@ bot.on("message", async (msg) => {
         inline_keyboard: [
           [
             {
-              text: "🛒 VER OFERTA",
+              text: "🛒 VER OFERTA AGORA",
               url: p.link.split("?")[0]
             }
           ]
