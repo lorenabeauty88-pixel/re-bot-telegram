@@ -9,15 +9,24 @@ if (!token) {
   process.exit(1);
 }
 
-const bot = new TelegramBot(token, {
-  polling: true
+// 🚀 BOT
+const bot = new TelegramBot(token);
+
+// 🔥 remove webhook antigo
+bot.deleteWebHook();
+
+// 🚀 inicia polling correto
+bot.startPolling({
+  restart: true
 });
 
 console.log("🔥 DIVULGADOR INTELIGENTE ONLINE");
 
 // 🚀 resolve link encurtado
 async function resolverLink(url) {
+
   try {
+
     const response = await axios.get(url, {
       maxRedirects: 10,
       headers: {
@@ -28,13 +37,16 @@ async function resolverLink(url) {
     return response.request.res.responseUrl || url;
 
   } catch (err) {
+
     console.log("Erro redirect:", err.message);
+
     return url;
   }
 }
 
-// 🚀 pega produto automaticamente
+// 🚀 pega dados do produto
 async function pegarProduto(link) {
+
   try {
 
     const realLink = await resolverLink(link);
@@ -65,27 +77,45 @@ async function pegarProduto(link) {
 
     // fallback preço
     if (!preco) {
-      const texto = html.match(/"price":\s?([0-9.]+)/);
 
-      if (texto) {
-        preco = texto[1];
+      const match = html.match(/"price":\s?([0-9.]+)/);
+
+      if (match) {
+        preco = match[1];
       }
     }
 
     return {
       titulo,
-      preco: preco || "Promoção",
+      preco: preco || "49.90",
       imagem,
       link: realLink
     };
 
   } catch (err) {
+
     console.log("Erro produto:", err.message);
+
     return null;
   }
 }
 
-// 🚀 recebe mensagem
+// 🚀 START
+bot.onText(/\/start/, (msg) => {
+
+  bot.sendMessage(
+    msg.chat.id,
+    `🔥 DIVULGADOR INTELIGENTE 🔥
+
+Envie apenas o link do produto:
+
+✅ Mercado Livre
+✅ Shopee
+✅ Amazon`
+  );
+});
+
+// 🚀 mensagens
 bot.on("message", async (msg) => {
 
   try {
@@ -94,16 +124,19 @@ bot.on("message", async (msg) => {
 
     if (!text) return;
 
+    // ignora comandos
+    if (text.startsWith("/")) return;
+
     // aceita apenas links
     if (!text.startsWith("http")) {
 
       return bot.sendMessage(
         msg.chat.id,
-        "❌ Envie um link do produto"
+        "❌ Envie apenas o link do produto"
       );
     }
 
-    // mensagem carregando
+    // loading
     const loading = await bot.sendMessage(
       msg.chat.id,
       "🔎 Procurando produto..."
@@ -112,6 +145,13 @@ bot.on("message", async (msg) => {
     // pega produto
     const p = await pegarProduto(text);
 
+    // remove loading
+    await bot.deleteMessage(
+      msg.chat.id,
+      loading.message_id
+    );
+
+    // erro produto
     if (!p) {
 
       return bot.sendMessage(
@@ -120,23 +160,18 @@ bot.on("message", async (msg) => {
       );
     }
 
-    // preço antigo fake
+    // preço
     let precoAtual = parseFloat(p.preco);
 
     if (isNaN(precoAtual)) {
       precoAtual = 49.90;
     }
 
+    // preço fake antigo
     const precoAntigo =
       (precoAtual * 1.6).toFixed(2);
 
-    // remove loading
-    await bot.deleteMessage(
-      msg.chat.id,
-      loading.message_id
-    );
-
-    // envia produto
+    // 🚀 envia foto
     if (p.imagem) {
 
       await bot.sendPhoto(msg.chat.id, p.imagem, {
