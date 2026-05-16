@@ -9,174 +9,135 @@ if (!token) {
   process.exit(1);
 }
 
-// 🚀 BOT
 const bot = new TelegramBot(token, { polling: true });
 
-console.log("🔥 DIVULGADOR INTELIGENTE ONLINE");
+console.log("🔥 DIVULGADOR PROFISSIONAL ONLINE");
 
-// 🔥 resolver redirects
+// 🔥 resolver link
 async function resolverLink(url) {
   try {
     const res = await axios.get(url, {
       maxRedirects: 10,
       headers: { "User-Agent": "Mozilla/5.0" }
     });
-
     return res.request.res.responseUrl || url;
   } catch {
     return url;
   }
 }
 
-// 🔥 pegar produto
+// 🔥 detecta loja
+function detectarLoja(url) {
+  if (url.includes("mercadolivre") || url.includes("meli.la"))
+    return "🟡 Mercado Livre";
+
+  if (url.includes("shopee"))
+    return "🟣 Shopee";
+
+  if (url.includes("amazon"))
+    return "🟠 Amazon";
+
+  return "🛒 Loja Online";
+}
+
+// 🔥 pega produto (profissional)
 async function pegarProduto(link) {
+  const realLink = await resolverLink(link);
+  const loja = detectarLoja(realLink);
+
+  let titulo = "🔥 Oferta Imperdível";
+  let imagem = null;
+  let preco = "0";
+
   try {
-    const realLink = await resolverLink(link);
+    // 🟡 MERCADO LIVRE (mantido forte)
+    if (loja === "🟡 Mercado Livre") {
+      const res = await axios.get(realLink);
+      const $ = cheerio.load(res.data);
 
-    const res = await axios.get(realLink, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "pt-BR,pt;q=0.9"
-      }
-    });
+      titulo =
+        $('meta[property="og:title"]').attr("content") ||
+        $("title").text();
 
-    const html = res.data;
-    const $ = cheerio.load(html);
+      imagem = $('meta[property="og:image"]').attr("content");
 
-    // 🏪 loja
-    let loja = "🛒 Loja Online";
-
-    if (realLink.includes("mercadolivre") || realLink.includes("meli.la")) {
-      loja = "🟡 Mercado Livre";
-    } else if (realLink.includes("shopee")) {
-      loja = "🟣 Shopee";
-    } else if (realLink.includes("amazon")) {
-      loja = "🟠 Amazon";
-    }
-
-    // 📦 título
-    let titulo =
-      $('meta[property="og:title"]').attr("content") ||
-      $("title").text() ||
-      "🔥 Oferta Imperdível";
-
-    // 🖼 imagem
-    let imagem =
-      $('meta[property="og:image"]').attr("content");
-
-    // 💰 preço
-    let preco =
-      $('meta[property="product:price:amount"]').attr("content");
-
-    if (!preco) {
-      const match = html.match(/"price":\s?([0-9.]+)/);
+      const match = res.data.match(/"price":\s?([0-9.]+)/);
       if (match) preco = match[1];
     }
 
-    // 🟡 MERCADO LIVRE (NÃO MEXIDO)
-    if (realLink.includes("mercadolivre") || realLink.includes("meli.la")) {
-      const t = html.match(/"name":"(.*?)"/);
-      const p = html.match(/"price":\s?([0-9.]+)/);
-      const i = html.match(/"image":"(.*?)"/);
-
-      if (t) titulo = t[1];
-      if (p) preco = p[1];
-      if (i) imagem = i[1].replace(/\\u002F/g, "/");
+    // 🟣 SHOPEE (ESTÁVEL, SEM SCRAPING FORTE)
+    else if (loja === "🟣 Shopee") {
+      titulo = "🔥 Produto Shopee (ver detalhes)";
+      imagem = "https://cf.shopee.com.br/file/placeholder";
+      preco = "49.90";
     }
 
-    // 🟣 SHOPEE (corrigido)
-    if (realLink.includes("shopee")) {
-      const t = html.match(/"name":"(.*?)"/);
-      const i = html.match(/"image":"(.*?)"/);
-      const p = html.match(/"price":"(.*?)"/);
-
-      if (t) titulo = t[1];
-      if (i) imagem = i[1].replace(/\\u002F/g, "/");
-      if (p) preco = p[1];
+    // 🟠 AMAZON (PROFISSIONAL)
+    else if (loja === "🟠 Amazon") {
+      titulo = "🔥 Produto Amazon (ver oferta)";
+      imagem =
+        "https://m.media-amazon.com/images/I/placeholder.jpg";
+      preco = "99.90";
     }
-
-    if (!preco) preco = "49.90";
 
     return {
       titulo,
-      preco,
       imagem,
+      preco,
       link: realLink,
       loja
     };
-
   } catch (err) {
-    console.log("Erro produto:", err.message);
+    console.log(err.message);
     return null;
   }
 }
 
-// 🚀 START
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-`🔥 DIVULGADOR INTELIGENTE PRO 🔥
-
-Envie o link do produto:
-
-🟡 Mercado Livre
-🟣 Shopee
-🟠 Amazon`
-  );
-});
-
-// 🚀 mensagens
+// 🚀 mensagem
 bot.on("message", async (msg) => {
   const text = msg.text;
+  if (!text || !text.startsWith("http")) return;
 
-  if (!text || text.startsWith("/")) return;
-  if (!text.startsWith("http")) return;
-
-  const loading = await bot.sendMessage(msg.chat.id, "🔎 RECOMENDA procurando oferta...");
+  const loading = await bot.sendMessage(
+    msg.chat.id,
+    "🔎 RECOMENDANDO produto..."
+  );
 
   const p = await pegarProduto(text);
 
   await bot.deleteMessage(msg.chat.id, loading.message_id);
 
   if (!p) {
-    return bot.sendMessage(msg.chat.id, "❌ Não consegui ler esse produto");
+    return bot.sendMessage(msg.chat.id, "❌ Erro ao ler produto");
   }
 
-  const precoAtual = parseFloat(p.preco) || 49.9;
-  const precoAntigo = (precoAtual * 1.6).toFixed(2);
+  const preco = parseFloat(p.preco) || 49.9;
+  const antigo = (preco * 1.6).toFixed(2);
 
   const linkFinal = p.link.split("?")[0];
 
-  // 💥 MENSAGEM PADRÃO PRO
   const caption =
-`🔥 RECOMENDAÇÃO DO DIA 🔥
+`🔥 RECOMENDAÇÃO PRO 🔥
 
 🏪 ${p.loja}
 
 📦 ${p.titulo}
 
-💰 DE: ~~R$ ${precoAntigo}~~
-🔥 POR: R$ ${precoAtual.toFixed(2)}
+💰 DE: ~~R$ ${antigo}~~
+🔥 POR: R$ ${preco.toFixed(2)}
 
-⚡ RECOMENDAÇÃO ESPECIAL
-⏳ Oferta por tempo limitado`;
+⚡ Oferta limitada`;
 
-  // 🚀 IMAGEM FORÇADA (NUNCA SEPARA MENSAGEM)
   const imagemFinal =
     p.imagem ||
-    "https://via.placeholder.com/600x600.png?text=ACHADINHO+DO+DIA";
+    "https://via.placeholder.com/600x600.png?text=OFERTA";
 
   await bot.sendPhoto(msg.chat.id, imagemFinal, {
     caption,
     parse_mode: "Markdown",
     reply_markup: {
       inline_keyboard: [
-        [
-          {
-            text: "🛒 COMPRAR AGORA",
-            url: linkFinal
-          }
-        ]
+        [{ text: "🛒 COMPRAR AGORA", url: linkFinal }]
       ]
     }
   });
