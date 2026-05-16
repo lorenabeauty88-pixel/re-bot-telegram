@@ -12,11 +12,15 @@ if (!token) {
 // =========================
 // 🚀 BOT ESTÁVEL
 // =========================
+const TelegramBot = require("node-telegram-bot-api");
+
 const bot = new TelegramBot(token, {
   polling: {
     autoStart: true,
     interval: 3000,
-    params: { timeout: 10 }
+    params: {
+      timeout: 10
+    }
   }
 });
 
