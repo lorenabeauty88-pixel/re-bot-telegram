@@ -59,7 +59,23 @@ async function pegarProduto(link) {
 
     const html = response.data;
 
-    const $ = cheerio.load(html);
+    // detecta loja
+let loja = "🛒 Loja Online";
+
+if (
+  link.includes("mercadolivre") ||
+  link.includes("meli.la")
+) {
+  loja = "🟡 Mercado Livre";
+}
+
+if (link.includes("amazon")) {
+  loja = "🟠 Amazon";
+}
+
+if (link.includes("shopee")) {
+  loja = "🟣 Shopee";
+}
 
     // 🔥 título
     let titulo =
@@ -85,13 +101,13 @@ async function pegarProduto(link) {
       }
     }
 
-    return {
-      titulo,
-      preco: preco || "49.90",
-      imagem,
-      link: realLink
-    };
-
+ return {
+  titulo,
+  preco: preco || "49.90",
+  imagem,
+  link: realLink,
+  loja
+};
   } catch (err) {
 
     console.log("Erro produto:", err.message);
@@ -177,6 +193,8 @@ bot.on("message", async (msg) => {
       await bot.sendPhoto(msg.chat.id, p.imagem, {
 
         caption: `🔥 ACHADINHO DO DIA 🔥
+
+🏪 ${p.loja}
 
 📦 ${p.titulo}
 
