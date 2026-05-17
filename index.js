@@ -47,3 +47,22 @@ bot.onText(/\/promo(.*)/, async (msg, match) => {
     bot.sendMessage(chatId, "❌ Erro ao buscar produtos agora.");
   }
 });
+// resto do código acima...
+
+bot.onText(/\/promo (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+
+  try {
+
+    // código da promoção aqui
+
+  } catch (error) {
+    console.log(error);
+
+    bot.sendMessage(chatId, "❌ Erro ao buscar produtos agora.");
+  }
+});
+
+bot.on("polling_error", (err) => {
+  console.error("Polling error:", err.message);
+});
