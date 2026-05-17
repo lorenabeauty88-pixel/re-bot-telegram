@@ -1,50 +1,34 @@
 const TelegramBot = require("node-telegram-bot-api");
 
+console.log("🔥 INICIANDO BOT...");
+
 const token = process.env.BOT_TOKEN;
 
+console.log("🔑 TOKEN STATUS:", token ? "OK" : "FALTANDO");
+
 if (!token) {
-  console.log("❌ BOT_TOKEN NÃO ENCONTRADO");
+  console.log("❌ BOT_TOKEN NÃO DEFINIDO NO RAILWAY");
   process.exit(1);
 }
 
-console.log("🔥 BOT INICIANDO...");
+let bot;
 
-// 🔥 FORÇA POLLING SIMPLES E ESTÁVEL
-const bot = new TelegramBot(token, {
-  polling: true
-});
+try {
+  bot = new TelegramBot(token, { polling: true });
+  console.log("🤖 BOT CRIADO COM SUCESSO");
+} catch (e) {
+  console.log("❌ ERRO AO CRIAR BOT:", e.message);
+  process.exit(1);
+}
 
-// ============================
-// 📡 DEBUG REAL
-// ============================
 bot.on("message", (msg) => {
-  console.log("📩 RECEBIDO:", msg.text);
+  console.log("📩 MSG RECEBIDA:", msg.text);
 });
 
-// ============================
-// 🤖 START
-// ============================
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "🔥 BOT ONLINE E FUNCIONANDO");
+  bot.sendMessage(msg.chat.id, "🔥 BOT FUNCIONANDO PERFEITAMENTE");
 });
 
-// ============================
-// 💰 PROMO
-// ============================
-bot.onText(/\/promo (.+)/, (msg, match) => {
-  const url = match[1];
-
-  bot.sendMessage(msg.chat.id,
-`🚨 OFERTA
-
-🔗 ${url}
-
-🔥 Re Recomenda Ofertas`);
-});
-
-// ============================
-// ❌ ERROS DO POLLING
-// ============================
 bot.on("polling_error", (err) => {
   console.log("❌ POLLING ERROR:", err.message);
 });
