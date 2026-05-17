@@ -10,7 +10,7 @@ if (!token) {
 
 const bot = new TelegramBot(token, { polling: true });
 
-console.log("🤖 Bot iniciado com sucesso!");
+console.log("🤖 BOT CONECTADO COM POLLING");
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -53,20 +53,15 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
         `💰 R$ ${item.price}\n` +
         `🔗 ${item.permalink}`;
 
-     const image = item.thumbnail.replace("I.jpg", "O.jpg");
+      const image = item.thumbnail?.replace("I.jpg", "O.jpg");
 
-try {
-  await bot.sendPhoto(chatId, image, {
-    caption: text,
-  });
-} catch {
-  await bot.sendMessage(chatId, text);
-}
-            caption: mensagem
-          }
-        );
+      try {
 
-      } else {
+        await bot.sendPhoto(chatId, image, {
+          caption: mensagem
+        });
+
+      } catch {
 
         await bot.sendMessage(
           chatId,
@@ -77,7 +72,7 @@ try {
 
   } catch (error) {
 
-    console.log(error);
+    console.log("❌ ERRO:", error.message);
 
     bot.sendMessage(
       chatId,
