@@ -1,27 +1,40 @@
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
-// TOKEN do bot (Render / env)
+// TOKEN do Render
 const token = process.env.BOT_TOKEN;
 
 if (!token) {
-  console.log("❌ BOT_TOKEN não encontrado nas variáveis de ambiente");
+  console.log("❌ BOT_TOKEN não encontrado no ambiente");
   process.exit(1);
 }
 
+// inicia bot
 const bot = new TelegramBot(token, { polling: true });
 
 console.log("🔥 BOT INICIADO COM SUCESSO");
 
-// /start
+// ===============================
+// DEBUG: ver mensagens chegando
+// ===============================
+bot.on("message", (msg) => {
+  console.log("📩 CHEGOU MENSAGEM:", msg.text);
+});
+
+// ===============================
+// START
+// ===============================
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
-    "🌸 Bem-vindo ao Achadinhos Viral!\n\n👉 Use:\n/promo nome do produto"
+    "🌸 *Achadinhos Viral Bot*\n\n👉 Use:\n/promo nome do produto",
+    { parse_mode: "Markdown" }
   );
 });
 
-// /promo
+// ===============================
+// PROMO (Mercado Livre)
+// ===============================
 bot.onText(/\/promo (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const query = match[1];
@@ -30,7 +43,6 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     bot.sendMessage(chatId, "🔎 Buscando ofertas no Mercado Livre...");
 
     const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
-
     const response = await axios.get(url);
 
     const items = response.data.results;
@@ -39,12 +51,11 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       return bot.sendMessage(chatId, "❌ Nenhum produto encontrado.");
     }
 
-    // pega os 3 primeiros resultados
     const top = items.slice(0, 3);
 
     let message = `🔥 *Achadinhos para:* ${query}\n\n`;
 
-    top.forEach((item, index) => {
+    top.forEach((item) => {
       message +=
         `🛍 *${item.title}*\n` +
         `💰 R$ ${item.price}\n` +
@@ -54,10 +65,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
 
   } catch (error) {
-    console.log("Erro:", error.message);
+    console.log("❌ ERRO:", error.message);
     bot.sendMessage(chatId, "⚠️ Erro ao buscar produtos. Tente novamente.");
   }
-});
-bot.on("message", (msg) => {
-  console.log("📩 RECEBI:", msg.text);
 });
