@@ -1,92 +1,49 @@
 const TelegramBot = require("node-telegram-bot-api");
-const express = require("express");
 
 const token = process.env.BOT_TOKEN;
-const URL = process.env.URL; // https://seu-app.onrender.com
+const URL = process.env.URL;
 
-if (!token || !URL) {
-  console.log("❌ Faltando BOT_TOKEN ou URL nas variáveis de ambiente");
+console.log("🔥 BOT INICIANDO...");
+
+// ==============================
+// 🧠 CHECAGEM INTELIGENTE
+// ==============================
+if (!token) {
+  console.log("❌ BOT_TOKEN NÃO FOI ENCONTRADO");
   process.exit(1);
 }
 
-// 🔥 inicia bot SEM polling (webhook only)
-const bot = new TelegramBot(token);
-
-// ================================
-// 🌐 EXPRESS SERVER
-// ================================
-const app = express();
-app.use(express.json());
-
-// webhook endpoint
-const webhookPath = `/bot${token}`;
-
-app.post(webhookPath, (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
+// ==============================
+// 🤖 BOT (SAFE MODE)
+// ==============================
+const bot = new TelegramBot(token, {
+  polling: true
 });
 
-// ================================
-// 🧠 DETECTA PLATAFORMA
-// ================================
-function detectarPlataforma(url) {
-  if (url.includes("shopee")) return "SHOPEE";
-  if (url.includes("amazon")) return "AMAZON";
-  if (url.includes("shein")) return "SHEIN";
-  if (url.includes("mercadolivre")) return "MERCADO_LIVRE";
-  return "DESCONHECIDO";
-}
+// ==============================
+// 🧪 TESTE SIMPLES
+// ==============================
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id,
+`🔥 BOT ONLINE
 
-// ================================
-// 💎 COPY SIMPLES E ESTÁVEL
-// ================================
-function gerarCopy(url, plataforma) {
+✔ Funcionando corretamente
+✔ Token OK
+${URL ? "✔ URL OK" : "⚠ URL não configurada (webhook ignorado)"}
+`);
+});
 
-  let emoji = "🛒";
+// ==============================
+// 🛍️ PROMO SIMPLES (SEM QUEBRAR)
+// ==============================
+bot.onText(/\/promo (.+)/, (msg, match) => {
+  const url = match[1];
 
-  if (plataforma === "AMAZON") emoji = "📦";
-  if (plataforma === "SHOPEE") emoji = "🛍️";
-  if (plataforma === "SHEIN") emoji = "👗";
-  if (plataforma === "MERCADO_LIVRE") emoji = "🏷️";
-
-  return `
-🚨 ${plataforma} OFERTA
-
-${emoji} Produto detectado automaticamente
+  bot.sendMessage(msg.chat.id,
+`🚨 OFERTA DETECTADA
 
 🔗 ${url}
 
-🔥 Re Recomenda Ofertas
-`;
-}
-
-// ================================
-// 🤖 COMANDO /promo
-// ================================
-bot.onText(/\/promo (.+)/, async (msg, match) => {
-
-  const url = match[1];
-  const plataforma = detectarPlataforma(url);
-
-  const post = gerarCopy(url, plataforma);
-
-  bot.sendMessage(msg.chat.id, post);
-});
-
-// ================================
-// 🚀 START SERVER + WEBHOOK
-// ================================
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, async () => {
-  console.log("🔥 BOT WEBHOOK ONLINE NA PORTA", PORT);
-
-  const webhookURL = `${URL}${webhookPath}`;
-
-  try {
-    await bot.setWebHook(webhookURL);
-    console.log("✅ WEBHOOK ATIVADO:", webhookURL);
-  } catch (err) {
-    console.log("❌ ERRO WEBHOOK:", err.message);
-  }
+🔥 Re Recomenda Ofertas`
+  );
 });
