@@ -1,23 +1,49 @@
-const TelegramBot = require("node-telegram-bot-api");
+bot.onText(/\/promo(.*)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const query = match[1]?.trim();
 
-const token = process.env.BOT_TOKEN;
+  if (!query) {
+    return bot.sendMessage(chatId, "👉 Use: /promo celular");
+  }
 
-console.log("BOT INICIANDO...");
-console.log("TOKEN RECEBIDO:", token ? "OK" : "FALHANDO");
+  console.log("🔥 PROMO ATIVADO:", query);
 
-if (!token) {
-  console.log("❌ BOT_TOKEN NÃO CARREGOU");
-  process.exit(1);
-}
+  try {
+    bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
 
-const bot = new TelegramBot(token, { polling: true });
+    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=5`;
 
-bot.on("polling_error", (err) => {
-  console.log("POLLING ERROR:", err.code || err.message);
-});
+    const res = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "application/json",
+      },
+      timeout: 15000,
+    });
 
-bot.on("message", (msg) => {
-  console.log("📩 MENSAGEM RECEBIDA:", msg.text);
+    const items = res.data.results;
 
-  bot.sendMessage(msg.chat.id, "🔥 FUNCIONANDO 100%");
+    if (!items || items.length === 0) {
+      return bot.sendMessage(chatId, "❌ Nenhum produto encontrado.");
+    }
+
+    const top = items.sort((a, b) => a.price - b.price).slice(0, 5);
+
+    for (const item of top) {
+      const text =
+        `🔥 ACHADINHO\n\n` +
+        `🛍 ${item.title}\n` +
+        `💰 R$ ${item.price}\n` +
+        `🔗 ${item.permalink}`;
+
+      if (item.thumbnail) {
+        await bot.sendPhoto(chatId, item.thumbnail, { caption: text });
+      } else {
+        await bot.sendMessage(chatId, text);
+      }
+    }
+  } catch (err) {
+    console.log("❌ ERRO:", err.response?.status || err.message);
+    bot.sendMessage(chatId, "❌ Erro ao buscar produtos agora.");
+  }
 });
