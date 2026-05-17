@@ -8,7 +8,6 @@ if (!token) {
   process.exit(1);
 }
 
-// 🔥 CRIA O BOT (OBRIGATÓRIO)
 const bot = new TelegramBot(token, {
   polling: {
     interval: 1000,
@@ -28,21 +27,40 @@ bot.on("message", (msg) => {
   console.log("📩 CHEGOU MENSAGEM:", msg.text);
 });
 
-// start
+// /start
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "🔥 Bot de Achadinhos ativo!");
 });
 
-// promo Mercado Livre
+// 🔥 função segura Mercado Livre (corrige 403)
+async function fetchML(url) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await axios.get(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          "Accept": "application/json"
+        },
+        timeout: 15000
+      });
+    } catch (err) {
+      console.log(`⚠️ tentativa ${i + 1} falhou`);
+      if (i === 2) throw err;
+    }
+  }
+}
+
+// /promo
 bot.onText(/\/promo (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const query = match[1];
 
   try {
-    bot.sendMessage(chatId, "🔎 Buscando produtos...");
+    bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
 
     const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
-    const res = await axios.get(url);
+    const res = await fetchML(url);
 
     const items = res.data.results;
 
@@ -53,21 +71,26 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     const top = items.slice(0, 5);
 
     for (const item of top) {
-      const text =
-        `🔥 ACHADINHO\n\n` +
-        `🛍 ${item.title}\n` +
-        `💰 R$ ${item.price}\n` +
-        `🔗 ${item.permalink}`;
+      const title = item.title;
+      const price = item.price;
+      const link = item.permalink;
+      const image = item.thumbnail;
 
-      if (item.thumbnail) {
-        await bot.sendPhoto(chatId, item.thumbnail, { caption: text });
+      let text =
+        `🔥 ACHADINHO\n\n` +
+        `🛍 ${title}\n` +
+        `💰 R$ ${price}\n` +
+        `🔗 ${link}`;
+
+      if (image) {
+        await bot.sendPhoto(chatId, image, { caption: text });
       } else {
         await bot.sendMessage(chatId, text);
       }
     }
 
   } catch (err) {
-    console.log(err.message);
-    bot.sendMessage(chatId, "⚠️ Erro ao buscar produtos");
+    console.log("ERRO:", err.message);
+    bot.sendMessage(chatId, "⚠️ Erro ao buscar produtos. Tente novamente.");
   }
 });
