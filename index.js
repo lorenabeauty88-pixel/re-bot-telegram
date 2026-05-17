@@ -38,3 +38,6 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     `🔥 ${item.title}\n💰 R$ ${item.price}\n🔗 ${item.permalink}`
   );
 });
+bot.on("message", (msg) => {
+  console.log("📩 CHEGOU MENSAGEM:", msg.text);
+});
