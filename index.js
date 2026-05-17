@@ -24,7 +24,7 @@ bot.deleteWebHook().then(() => {
 
 // debug mensagens
 bot.on("message", (msg) => {
-  console.log("📩 CHEGOU MENSAGEM:", msg.text);
+  console.log("📩 MENSAGEM:", msg.text);
 });
 
 // /start
@@ -32,22 +32,20 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "🔥 Bot de Achadinhos ativo!");
 });
 
-// 🔥 função segura Mercado Livre (corrige 403)
+// 🔥 função segura (anti 403)
 async function fetchML(url) {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return await axios.get(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-          "Accept": "application/json"
-        },
-        timeout: 15000
-      });
-    } catch (err) {
-      console.log(`⚠️ tentativa ${i + 1} falhou`);
-      if (i === 2) throw err;
-    }
+  try {
+    return await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "application/json"
+      },
+      timeout: 15000
+    });
+  } catch (err) {
+    console.log("❌ ERRO API:", err.response?.status || err.message);
+    throw err;
   }
 }
 
@@ -57,7 +55,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
   const query = match[1];
 
   try {
-    bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
+    bot.sendMessage(chatId, "🔎 Buscando achadinhos baratos...");
 
     const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
     const res = await fetchML(url);
@@ -71,15 +69,15 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     const top = items.slice(0, 5);
 
     for (const item of top) {
-      const title = item.title;
-      const price = item.price;
-      const link = item.permalink;
-      const image = item.thumbnail;
+      const title = item.title || "Sem título";
+      const price = item.price ? `R$ ${item.price}` : "Preço não disponível";
+      const link = item.permalink || "";
+      const image = item.thumbnail || "";
 
       let text =
         `🔥 ACHADINHO\n\n` +
         `🛍 ${title}\n` +
-        `💰 R$ ${price}\n` +
+        `💰 ${price}\n` +
         `🔗 ${link}`;
 
       if (image) {
@@ -90,7 +88,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     }
 
   } catch (err) {
-    console.log("ERRO:", err.message);
+    console.log("❌ FALHA GERAL:", err.message);
     bot.sendMessage(chatId, "⚠️ Erro ao buscar produtos. Tente novamente.");
   }
 });
