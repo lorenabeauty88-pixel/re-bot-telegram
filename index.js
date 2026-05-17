@@ -8,7 +8,7 @@ if (!token) {
   process.exit(1);
 }
 
-// 🔥 cria o bot
+// 🔥 BOT
 const bot = new TelegramBot(token, {
   polling: {
     interval: 1000,
@@ -18,12 +18,12 @@ const bot = new TelegramBot(token, {
 
 console.log("🔥 BOT INICIADO");
 
-// 🧹 remove webhook antigo
+// 🧹 webhook
 bot.deleteWebHook()
   .then(() => console.log("🧹 Webhook removido"))
-  .catch(() => console.log("⚠️ sem webhook para remover"));
+  .catch(() => {});
 
-// 📩 log de mensagens
+// 📩 debug mensagens
 bot.on("message", (msg) => {
   console.log("📩 CHEGOU MENSAGEM:", msg.text);
 });
@@ -33,14 +33,13 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "🔥 Bot de Achadinhos ativo!");
 });
 
-// 🔎 /promo (aceita com ou sem texto)
+// 🔎 /promo (corrigido e estável)
 bot.onText(/\/promo(.*)/, async (msg, match) => {
   const chatId = msg.chat.id;
-
-  let query = match[1]?.trim();
+  const query = match[1]?.trim();
 
   if (!query) {
-    return bot.sendMessage(chatId, "👉 Use assim: /promo celular");
+    return bot.sendMessage(chatId, "👉 Use: /promo celular");
   }
 
   console.log("🔥 PROMO ATIVADO:", query);
@@ -48,12 +47,13 @@ bot.onText(/\/promo(.*)/, async (msg, match) => {
   try {
     bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
 
-  const url = `https://api.mercadolibre.com/sites/MLB/search?site_id=MLB&q=${encodeURIComponent(query)}&limit=10`;
+    // 🔥 LINK ESTÁVEL (menos 403)
+    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=5`;
 
     const res = await axios.get(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
       },
       timeout: 15000
     });
@@ -61,13 +61,12 @@ bot.onText(/\/promo(.*)/, async (msg, match) => {
     const items = res.data.results;
 
     if (!items || items.length === 0) {
-  console.log("❌ API retornou vazio:", query);
-  return bot.sendMessage(chatId, "⚠️ Nenhum resultado encontrado. Tente outro termo (ex: fone, iphone, notebook)");
-}
+      return bot.sendMessage(chatId, "❌ Nenhum produto encontrado.");
+    }
 
-   const top = items
-  .sort((a, b) => a.price - b.price)
-  .slice(0, 5);
+    const top = items
+      .sort((a, b) => a.price - b.price)
+      .slice(0, 5);
 
     for (const item of top) {
       const text =
