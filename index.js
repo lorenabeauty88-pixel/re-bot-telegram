@@ -2,25 +2,31 @@ const TelegramBot = require("node-telegram-bot-api");
 
 const token = process.env.BOT_TOKEN;
 
+if (!token) {
+  console.log("❌ BOT_TOKEN não encontrado!");
+  process.exit(1);
+}
+
+console.log("🤖 BOT INICIANDO...");
+
 const bot = new TelegramBot(token, { polling: true });
 
-console.log("🤖 BOT ONLINE!");
+bot.on("polling_error", (error) => {
+  console.log("Erro polling:", error);
+});
 
-bot.onText(/\/start/, (msg) => {
+bot.on("message", (msg) => {
+  console.log("Recebi:", msg.text);
+
   bot.sendMessage(
     msg.chat.id,
-    "🌸 Bem-vindo ao Achadinhos Bot!\n\nUse /promo para ver as ofertas 🔥"
+    "🔥 Bot funcionando 100%!\n\nUse /promo"
   );
 });
 
 bot.onText(/\/promo/, (msg) => {
-  const texto =
-    "🔥 *PROMOÇÕES DO DIA*\n\n" +
-    "🛍️ Fone Bluetooth\n💰 R$ 39,90\n👉 https://seulink.com\n\n" +
-    "🛍️ Smartwatch\n💰 R$ 79,90\n👉 https://seulink.com\n\n" +
-    "🛍️ Mini Caixa de Som\n💰 R$ 29,90\n👉 https://seulink.com\n";
-
-  bot.sendMessage(msg.chat.id, texto, {
-    parse_mode: "Markdown"
-  });
+  bot.sendMessage(
+    msg.chat.id,
+    "🛍️ Produto teste\n💰 R$ 29,90\n👉 https://seulink.com"
+  );
 });
