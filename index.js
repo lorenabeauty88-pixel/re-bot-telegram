@@ -1,18 +1,17 @@
 const TelegramBot = require("node-telegram-bot-api");
 
-const token = process.env.BOT_TOKEN;
+console.log("INICIANDO BOT...");
 
-console.log("BOT START");
+console.log("TOKEN:", process.env.BOT_TOKEN);
 
-if (!token) {
-  console.log("SEM TOKEN");
-  process.exit(1);
-}
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-const bot = new TelegramBot(token, { polling: true });
+bot.on("polling_error", (err) => {
+  console.log("POLLING ERROR:", err);
+});
 
 bot.on("message", (msg) => {
   console.log("RECEBI:", msg.text);
 
-  bot.sendMessage(msg.chat.id, "🔥 FUNCIONANDO - RECEBI SUA MENSAGEM");
+  bot.sendMessage(msg.chat.id, "🔥 FUNCIONANDO!");
 });
