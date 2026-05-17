@@ -3,37 +3,29 @@ const TelegramBot = require("node-telegram-bot-api");
 const token = process.env.BOT_TOKEN;
 
 if (!token) {
-  console.log("❌ BOT_TOKEN não encontrado");
+  console.log("❌ BOT_TOKEN NÃO ENCONTRADO");
   process.exit(1);
 }
 
 console.log("🔥 BOT INICIANDO...");
 
-// 🔥 FORÇA POLLING LIMPO
+// 🔥 FORÇA POLLING SIMPLES E ESTÁVEL
 const bot = new TelegramBot(token, {
-  polling: {
-    interval: 1000,
-    autoStart: true
-  }
+  polling: true
 });
 
 // ============================
-// 🧪 TESTE DE CONEXÃO
+// 📡 DEBUG REAL
 // ============================
-bot.on("polling_error", (error) => {
-  console.log("❌ POLLING ERROR:", error.message);
+bot.on("message", (msg) => {
+  console.log("📩 RECEBIDO:", msg.text);
 });
 
 // ============================
 // 🤖 START
 // ============================
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id,
-`🔥 BOT ONLINE
-
-✔ Funcionando corretamente
-✔ Conectado ao Telegram
-`);
+  bot.sendMessage(msg.chat.id, "🔥 BOT ONLINE E FUNCIONANDO");
 });
 
 // ============================
@@ -43,7 +35,7 @@ bot.onText(/\/promo (.+)/, (msg, match) => {
   const url = match[1];
 
   bot.sendMessage(msg.chat.id,
-`🚨 OFERTA DETECTADA
+`🚨 OFERTA
 
 🔗 ${url}
 
@@ -51,8 +43,8 @@ bot.onText(/\/promo (.+)/, (msg, match) => {
 });
 
 // ============================
-// 👀 DEBUG (IMPORTANTE)
+// ❌ ERROS DO POLLING
 // ============================
-bot.on("message", (msg) => {
-  console.log("📩 Mensagem recebida:", msg.text);
+bot.on("polling_error", (err) => {
+  console.log("❌ POLLING ERROR:", err.message);
 });
