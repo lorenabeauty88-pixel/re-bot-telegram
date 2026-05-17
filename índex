@@ -53,12 +53,15 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
         `💰 R$ ${item.price}\n` +
         `🔗 ${item.permalink}`;
 
-      if (item.thumbnail) {
+     const image = item.thumbnail.replace("I.jpg", "O.jpg");
 
-        await bot.sendPhoto(
-          chatId,
-          item.thumbnail,
-          {
+try {
+  await bot.sendPhoto(chatId, image, {
+    caption: text,
+  });
+} catch {
+  await bot.sendMessage(chatId, text);
+}
             caption: mensagem
           }
         );
