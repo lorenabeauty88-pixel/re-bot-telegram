@@ -17,51 +17,37 @@ bot.onText(/\/start/, (msg) => {
 
   bot.sendMessage(
     chatId,
-    "👋 Olá! Sou o Achadinhos Bot!\n\nUse /promo <produto> para buscar os melhores preços no Mercado Livre.\n\nExemplo:\n/promo celular"
+    "👋 Olá! Sou o Achadinhos Bot!\n\nUse /promo <produto>\n\nExemplo:\n/promo iphone"
   );
 });
 
-bot.onText(/\/promo(.*)/, async (msg, match) => {
+bot.onText(/\/promo (.+)/, async (msg, match) => {
+
   const chatId = msg.chat.id;
-  const query = match[1]?.trim();
-
-  if (!query) {
-    return bot.sendMessage(chatId, "👉 Use: /promo celular");
-  }
-
-  console.log("🔥 PROMO ATIVADO:", query);
+  const query = match[1];
 
   try {
 
-    bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
+    bot.sendMessage(chatId, `🔎 Buscando: ${query}`);
 
     const url =
       `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=5`;
 
-    const res = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        Accept: "application/json",
-      },
-      timeout: 15000,
-    });
+    const response = await axios.get(url);
 
-    const items = res.data.results;
+    const produtos = response.data.results;
 
-    if (!items || items.length === 0) {
+    if (!produtos || produtos.length === 0) {
+
       return bot.sendMessage(
         chatId,
         "❌ Nenhum produto encontrado."
       );
     }
 
-    const top = items
-      .sort((a, b) => a.price - b.price)
-      .slice(0, 5);
+    for (const item of produtos.slice(0, 5)) {
 
-    for (const item of top) {
-
-      const text =
+      const mensagem =
         `🔥 ACHADINHO\n\n` +
         `🛍 ${item.title}\n` +
         `💰 R$ ${item.price}\n` +
@@ -73,23 +59,22 @@ bot.onText(/\/promo(.*)/, async (msg, match) => {
           chatId,
           item.thumbnail,
           {
-            caption: text
+            caption: mensagem
           }
         );
 
       } else {
 
-        await bot.sendMessage(chatId, text);
-
+        await bot.sendMessage(
+          chatId,
+          mensagem
+        );
       }
     }
 
-  } catch (err) {
+  } catch (error) {
 
-    console.log(
-      "❌ ERRO:",
-      err.response?.status || err.message
-    );
+    console.log(error);
 
     bot.sendMessage(
       chatId,
