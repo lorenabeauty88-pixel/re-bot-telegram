@@ -1,41 +1,44 @@
 const TelegramBot = require("node-telegram-bot-api");
 
 const token = process.env.BOT_TOKEN;
-const URL = process.env.URL;
 
-console.log("🔥 BOT INICIANDO...");
-
-// ==============================
-// 🧠 CHECAGEM INTELIGENTE
-// ==============================
 if (!token) {
-  console.log("❌ BOT_TOKEN NÃO FOI ENCONTRADO");
+  console.log("❌ BOT_TOKEN não encontrado");
   process.exit(1);
 }
 
-// ==============================
-// 🤖 BOT (SAFE MODE)
-// ==============================
+console.log("🔥 BOT INICIANDO...");
+
+// 🔥 FORÇA POLLING LIMPO
 const bot = new TelegramBot(token, {
-  polling: true
+  polling: {
+    interval: 1000,
+    autoStart: true
+  }
 });
 
-// ==============================
-// 🧪 TESTE SIMPLES
-// ==============================
+// ============================
+// 🧪 TESTE DE CONEXÃO
+// ============================
+bot.on("polling_error", (error) => {
+  console.log("❌ POLLING ERROR:", error.message);
+});
+
+// ============================
+// 🤖 START
+// ============================
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id,
 `🔥 BOT ONLINE
 
 ✔ Funcionando corretamente
-✔ Token OK
-${URL ? "✔ URL OK" : "⚠ URL não configurada (webhook ignorado)"}
+✔ Conectado ao Telegram
 `);
 });
 
-// ==============================
-// 🛍️ PROMO SIMPLES (SEM QUEBRAR)
-// ==============================
+// ============================
+// 💰 PROMO
+// ============================
 bot.onText(/\/promo (.+)/, (msg, match) => {
   const url = match[1];
 
@@ -44,6 +47,12 @@ bot.onText(/\/promo (.+)/, (msg, match) => {
 
 🔗 ${url}
 
-🔥 Re Recomenda Ofertas`
-  );
+🔥 Re Recomenda Ofertas`);
+});
+
+// ============================
+// 👀 DEBUG (IMPORTANTE)
+// ============================
+bot.on("message", (msg) => {
+  console.log("📩 Mensagem recebida:", msg.text);
 });
