@@ -8,7 +8,7 @@ if (!token) {
   process.exit(1);
 }
 
-// CRIA O BOT (OBRIGATÓRIO)
+// 🔥 cria o bot
 const bot = new TelegramBot(token, {
   polling: {
     interval: 1000,
@@ -18,37 +18,44 @@ const bot = new TelegramBot(token, {
 
 console.log("🔥 BOT INICIADO");
 
-// webhook antigo
-bot.deleteWebHook().then(() => {
-  console.log("🧹 Webhook removido");
-});
+// 🧹 remove webhook antigo
+bot.deleteWebHook()
+  .then(() => console.log("🧹 Webhook removido"))
+  .catch(() => console.log("⚠️ sem webhook para remover"));
 
-// debug mensagens
+// 📩 log de mensagens
 bot.on("message", (msg) => {
   console.log("📩 CHEGOU MENSAGEM:", msg.text);
 });
 
-// start
+// /start
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "🔥 Bot de Achadinhos ativo!");
 });
 
-// promo Mercado Livre
-bot.onText(/\/promo (.+)/, async (msg, match) => {
+// 🔎 /promo (aceita com ou sem texto)
+bot.onText(/\/promo(.*)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const query = match[1];
+
+  let query = match[1]?.trim();
+
+  if (!query) {
+    return bot.sendMessage(chatId, "👉 Use assim: /promo celular");
+  }
 
   console.log("🔥 PROMO ATIVADO:", query);
 
   try {
-    bot.sendMessage(chatId, "🔎 Buscando produtos...");
+    bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
 
     const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
 
     const res = await axios.get(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+      },
+      timeout: 15000
     });
 
     const items = res.data.results;
@@ -57,22 +64,24 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       return bot.sendMessage(chatId, "❌ Nenhum produto encontrado.");
     }
 
-    const item = items[0];
+    const top = items.slice(0, 5);
 
-    const text =
-      `🔥 ACHADINHO\n\n` +
-      `🛍 ${item.title}\n` +
-      `💰 R$ ${item.price}\n` +
-      `🔗 ${item.permalink}`;
+    for (const item of top) {
+      const text =
+        `🔥 ACHADINHO\n\n` +
+        `🛍 ${item.title}\n` +
+        `💰 R$ ${item.price}\n` +
+        `🔗 ${item.permalink}`;
 
-    if (item.thumbnail) {
-      await bot.sendPhoto(chatId, item.thumbnail, { caption: text });
-    } else {
-      await bot.sendMessage(chatId, text);
+      if (item.thumbnail) {
+        await bot.sendPhoto(chatId, item.thumbnail, { caption: text });
+      } else {
+        await bot.sendMessage(chatId, text);
+      }
     }
 
   } catch (err) {
-    console.log("❌ ERRO PROMO:", err.message);
-    bot.sendMessage(chatId, "⚠️ Erro ao buscar produto");
+    console.log("❌ ERRO:", err.response?.status || err.message);
+    bot.sendMessage(chatId, "⚠️ Erro ao buscar produtos. Tente novamente.");
   }
 });
