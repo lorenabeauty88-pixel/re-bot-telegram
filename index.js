@@ -69,3 +69,6 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     bot.sendMessage(chatId, "⚠️ Erro ao buscar produtos. Tente novamente.");
   }
 });
+bot.getMe().then((info) => {
+  console.log("🤖 BOT ONLINE:", info.username);
+});
