@@ -1,65 +1,49 @@
-bot.onText(/\/promo(.*)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const query = match[1]?.trim();
+const TelegramBot = require('node-telegram-bot-api');
+const axios = require('axios');
 
-  if (!query) {
-    return bot.sendMessage(chatId, "👉 Use: /promo celular");
-  }
+const token = process.env.BOT_TOKEN;
 
-  console.log("🔥 PROMO ATIVADO:", query);
+console.log("TOKEN OK:", token ? "SIM" : "NAO");
 
-  try {
-    bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
-
-    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=5`;
-
-    const res = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        Accept: "application/json",
-      },
-      timeout: 15000,
-    });
-
-    const items = res.data.results;
-
-    if (!items || items.length === 0) {
-      return bot.sendMessage(chatId, "❌ Nenhum produto encontrado.");
-    }
-
-    const top = items.sort((a, b) => a.price - b.price).slice(0, 5);
-
-    for (const item of top) {
-      const text =
-        `🔥 ACHADINHO\n\n` +
-        `🛍 ${item.title}\n` +
-        `💰 R$ ${item.price}\n` +
-        `🔗 ${item.permalink}`;
-
-      if (item.thumbnail) {
-        await bot.sendPhoto(chatId, item.thumbnail, { caption: text });
-      } else {
-        await bot.sendMessage(chatId, text);
-      }
-    }
-  } catch (err) {
-    console.log("❌ ERRO:", err.response?.status || err.message);
-    bot.sendMessage(chatId, "❌ Erro ao buscar produtos agora.");
-  }
+const bot = new TelegramBot(token, {
+  polling: true
 });
-// resto do código acima...
+
+console.log("🤖 BOT CONECTADO COM POLLING");
+
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    "🔥 Bot de achadinhos online!\n\nUse:\n/promo iphone"
+  );
+});
 
 bot.onText(/\/promo (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
+  const pesquisa = match[1];
 
   try {
 
-    // código da promoção aqui
+    bot.sendMessage(chatId, `🔎 Buscando: ${pesquisa}`);
+
+    // EXEMPLO
+    bot.sendPhoto(
+      chatId,
+      "https://http2.mlstatic.com/D_NQ_NP_2X_615792-MLA54964522843_042023-F.webp",
+      {
+        caption:
+          "📱 iPhone em promoção!\n💰 R$ 2.999\n🛒 https://mercadolivre.com"
+      }
+    );
 
   } catch (error) {
+
     console.log(error);
 
-    bot.sendMessage(chatId, "❌ Erro ao buscar produtos agora.");
+    bot.sendMessage(
+      chatId,
+      "❌ Erro ao buscar produtos agora."
+    );
   }
 });
 
