@@ -1,0 +1,74 @@
+const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
+
+// TOKEN DO BOT
+const token = process.env.BOT_TOKEN;
+
+// VERIFICA TOKEN
+if (!token) {
+  console.error("❌ BOT_TOKEN não configurado!");
+  process.exit(1);
+}
+
+// INICIA BOT
+const bot = new TelegramBot(token, {
+  polling: true
+});
+
+console.log("🤖 Bot iniciado com sucesso!");
+
+// COMANDO START
+bot.onText(/\/start/, (msg) => {
+  const chatId = msg.chat.id;
+
+  bot.sendMessage(
+    chatId,
+    `🔥 Bot de promoções iniciado!
+
+Envie um link da Shopee, Amazon ou Mercado Livre para gerar uma promoção automática.`
+  );
+});
+
+// RECEBER LINKS
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const texto = msg.text;
+
+  // IGNORA /start
+  if (texto === "/start") return;
+
+  // VERIFICA SE É LINK
+  if (
+    texto.includes("shopee") ||
+    texto.includes("amazon") ||
+    texto.includes("mercadolivre") ||
+    texto.includes("meli")
+  ) {
+    try {
+      bot.sendMessage(chatId, "⏳ Criando promoção...");
+
+      // MODELO DE PROMOÇÃO
+      const promocao = `
+🔥 PROMOÇÃO ENCONTRADA 🔥
+
+🛍️ Produto selecionado com desconto!
+
+💰 Confira a oferta no link abaixo:
+${texto}
+
+⚡ Promoção sujeita a alteração a qualquer momento.
+`;
+
+      bot.sendMessage(chatId, promocao);
+
+    } catch (erro) {
+      console.error(erro);
+      bot.sendMessage(chatId, "❌ Erro ao criar promoção.");
+    }
+  } else {
+    bot.sendMessage(
+      chatId,
+      "📩 Envie um link da Shopee, Amazon ou Mercado Livre."
+    );
+  }
+});
