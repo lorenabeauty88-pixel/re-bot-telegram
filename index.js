@@ -1,3 +1,39 @@
+const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
+
+const token = process.env.BOT_TOKEN;
+
+if (!token) {
+  console.log("❌ BOT_TOKEN não encontrado");
+  process.exit(1);
+}
+
+// CRIA O BOT (OBRIGATÓRIO)
+const bot = new TelegramBot(token, {
+  polling: {
+    interval: 1000,
+    autoStart: true
+  }
+});
+
+console.log("🔥 BOT INICIADO");
+
+// webhook antigo
+bot.deleteWebHook().then(() => {
+  console.log("🧹 Webhook removido");
+});
+
+// debug mensagens
+bot.on("message", (msg) => {
+  console.log("📩 CHEGOU MENSAGEM:", msg.text);
+});
+
+// start
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, "🔥 Bot de Achadinhos ativo!");
+});
+
+// promo Mercado Livre
 bot.onText(/\/promo (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const query = match[1];
@@ -5,7 +41,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
   console.log("🔥 PROMO ATIVADO:", query);
 
   try {
-    bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
+    bot.sendMessage(chatId, "🔎 Buscando produtos...");
 
     const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
 
