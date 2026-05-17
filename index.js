@@ -48,7 +48,7 @@ bot.onText(/\/promo(.*)/, async (msg, match) => {
   try {
     bot.sendMessage(chatId, "🔎 Buscando achadinhos...");
 
-    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}`;
+  const url = `https://api.mercadolibre.com/sites/MLB/search?site_id=MLB&q=${encodeURIComponent(query)}&limit=10`;
 
     const res = await axios.get(url, {
       headers: {
@@ -61,10 +61,13 @@ bot.onText(/\/promo(.*)/, async (msg, match) => {
     const items = res.data.results;
 
     if (!items || items.length === 0) {
-      return bot.sendMessage(chatId, "❌ Nenhum produto encontrado.");
-    }
+  console.log("❌ API retornou vazio:", query);
+  return bot.sendMessage(chatId, "⚠️ Nenhum resultado encontrado. Tente outro termo (ex: fone, iphone, notebook)");
+}
 
-    const top = items.slice(0, 5);
+   const top = items
+  .sort((a, b) => a.price - b.price)
+  .slice(0, 5);
 
     for (const item of top) {
       const text =
