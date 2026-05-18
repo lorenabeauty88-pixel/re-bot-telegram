@@ -13,6 +13,7 @@ const bot = new TelegramBot(token, { polling: true });
 console.log("🤖 BOT CONECTADO COM POLLING");
 
 bot.onText(/\/start/, (msg) => {
+
   const chatId = msg.chat.id;
 
   bot.sendMessage(
@@ -28,15 +29,23 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
   try {
 
-    await bot.sendMessage(chatId, `🔎 Buscando: ${query}`);
+    await bot.sendMessage(
+      chatId,
+      `🔎 Buscando: ${query}`
+    );
 
     const url =
-      `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=5`;
+      `https://api.mercadolibre.com/sites/MLB/search?status=active&q=${encodeURIComponent(query)}&limit=5`;
 
-    You reached the start of the range
-May 18, 2026, 8:37 AM
-🤖 BOT CONECTADO COM POLLING
-> node index.js
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        Accept: "application/json",
+        Referer: "https://www.mercadolivre.com.br/"
+      },
+      timeout: 15000
+    });
 
     const produtos = response.data.results;
 
@@ -56,7 +65,8 @@ May 18, 2026, 8:37 AM
         `💰 R$ ${item.price}\n` +
         `🔗 ${item.permalink}`;
 
-      const image = item.thumbnail?.replace("I.jpg", "O.jpg");
+      const image =
+        item.thumbnail?.replace("I.jpg", "O.jpg");
 
       try {
 
@@ -76,9 +86,10 @@ May 18, 2026, 8:37 AM
   } catch (error) {
 
     console.log(
-  "❌ ERRO:",
-  error.response?.data || error.message
-);
+      "❌ ERRO:",
+      error.response?.data || error.message
+    );
+
     bot.sendMessage(
       chatId,
       "❌ Erro ao buscar produtos agora."
