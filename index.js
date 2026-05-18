@@ -33,7 +33,10 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
     const url =
       `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=5`;
 
-    const response = await axios.get(url);
+    You reached the start of the range
+May 18, 2026, 8:37 AM
+🤖 BOT CONECTADO COM POLLING
+> node index.js
 
     const produtos = response.data.results;
 
@@ -72,8 +75,10 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
   } catch (error) {
 
-    console.log("❌ ERRO:", error.message);
-
+    console.log(
+  "❌ ERRO:",
+  error.response?.data || error.message
+);
     bot.sendMessage(
       chatId,
       "❌ Erro ao buscar produtos agora."
