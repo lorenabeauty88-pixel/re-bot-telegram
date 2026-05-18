@@ -28,7 +28,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
   try {
 
-    bot.sendMessage(chatId, `🔎 Buscando: ${query}`);
+    await bot.sendMessage(chatId, `🔎 Buscando: ${query}`);
 
     const url =
       `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=5`;
@@ -82,3 +82,5 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 });
 
 bot.on("polling_error", (err) => {
+  console.error("Polling error:", err.message);
+});
