@@ -38,15 +38,24 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       "🔎 Buscando produto..."
     );
 
-    const response = await axios.get(link, {
-      maxRedirects: 5,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-      }
-    });
+  const response = await axios.get(link, {
+  maxRedirects: 10,
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36",
+    "Accept-Language": "pt-BR,pt;q=0.9",
+    "Accept":
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Referer":
+      "https://www.google.com/"
+  },
+  timeout: 20000
+});
 
-    const html = response.data;
+  const html =
+  typeof response.data === "string"
+    ? response.data
+    : JSON.stringify(response.data);
 
     const titulo =
       html.match(/<title>(.*?)<\/title>/i)?.[1]
