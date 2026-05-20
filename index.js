@@ -4,11 +4,11 @@ const axios = require("axios");
 const token = process.env.BOT_TOKEN;
 
 if (!token) {
-  console.log("❌ BOT_TOKEN não encontrado");
+  console.log("❌ BOT_TOKEN não configurado");
   process.exit(1);
 }
 
-// BOT
+// INICIA BOT
 const bot = new TelegramBot(token, {
   polling: true
 });
@@ -22,13 +22,14 @@ bot.onText(/\/start/, async (msg) => {
 
   await bot.sendMessage(
     chatId,
-`🔥 BOT DIVULGADOR INTELIGENTE 🔥
+`🔥 BOT DE ACHADINHOS 🔥
 
-Envie links de produtos assim:
+Envie um link assim:
 
-/promo LINK
+/promo LINK_DO_PRODUTO
 
 Exemplo:
+
 /promo https://produto.mercadolivre.com.br/...`
   );
 });
@@ -42,7 +43,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
     let link = match[1].trim();
 
-    // CORRIGE LINK
+    // ADICIONA HTTPS
     if (
       !link.startsWith("http://") &&
       !link.startsWith("https://")
@@ -50,53 +51,23 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       link = "https://" + link;
     }
 
+    // MSG
     await bot.sendMessage(
       chatId,
       "🔎 Buscando produto..."
     );
 
-    // PEGA URL FINAL
-    const redirectResponse = await axios.get(link, {
+    // PEGA HTML
+    const response = await axios.get(link, {
 
-      maxRedirects: 10,
-
-      validateStatus: () => true,
+      maxRedirects: 5,
 
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"
       },
 
-      timeout: 20000
-    });
-
-    // LINK FINAL
-    const finalUrl =
-      redirectResponse.request?.res?.responseUrl || link;
-
-    // HTML FINAL
-    const response = await axios.get(finalUrl, {
-
-      maxRedirects: 10,
-
-      validateStatus: () => true,
-
-      headers: {
-
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36",
-
-        "Accept-Language":
-          "pt-BR,pt;q=0.9",
-
-        "Accept":
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-
-        "Referer":
-          "https://www.google.com/"
-      },
-
-      timeout: 20000
+      timeout: 15000
     });
 
     const html =
@@ -118,78 +89,77 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
     // IMAGEM
     const imagem =
-      html.match(/"og:image" content="(.*?)"/i)?.[1] ||
-      html.match(/property="og:image" content="(.*?)"/i)?.[1];
+      html.match(/property="og:image" content="(.*?)"/i)?.[1] ||
+      html.match(/"og:image" content="(.*?)"/i)?.[1];
 
     // PREÇO
     let preco =
       html.match(/"price":"(.*?)"/i)?.[1] ||
-      html.match(/"price":(.*?),/i)?.[1];
+      html.match(/"price":(.*?),/i)?.[1] ||
+      "---";
 
     // PREÇO ANTIGO
     let precoAntigo =
-      html.match(/"originalPrice":"(.*?)"/i)?.[1];
+      html.match(/"originalPrice":"(.*?)"/i)?.[1] ||
+      "---";
 
     // DESCONTO
     let desconto = "";
 
-    if (preco && precoAntigo) {
+    const atual =
+      parseFloat(
+        preco.toString().replace(",", ".")
+      );
 
-      const atual =
-        parseFloat(
-          preco.toString().replace(",", ".")
+    const antigo =
+      parseFloat(
+        precoAntigo.toString().replace(",", ".")
+      );
+
+    if (
+      !isNaN(atual) &&
+      !isNaN(antigo) &&
+      antigo > atual
+    ) {
+
+      const porcentagem =
+        Math.round(
+          ((antigo - atual) / antigo) * 100
         );
 
-      const antigo =
-        parseFloat(
-          precoAntigo.toString().replace(",", ".")
-        );
-
-      if (
-        !isNaN(atual) &&
-        !isNaN(antigo) &&
-        antigo > atual
-      ) {
-
-        const porcentagem =
-          Math.round(
-            ((antigo - atual) / antigo) * 100
-          );
-
-        desconto =
+      desconto =
 `📊 ${porcentagem}% OFF`;
-      }
     }
 
-    // IDENTIFICA PLATAFORMA
+    // LOJA
     let loja = "🛒 Loja Online";
 
-    if (finalUrl.includes("mercadolivre")) {
+    if (link.includes("mercadolivre")) {
       loja = "🟨 Mercado Livre";
     }
 
-    if (finalUrl.includes("amazon")) {
+    if (link.includes("amazon")) {
       loja = "🟦 Amazon";
     }
 
-    if (finalUrl.includes("shopee")) {
+    if (link.includes("shopee")) {
       loja = "🟧 Shopee";
     }
 
-    if (finalUrl.includes("shein")) {
+    if (link.includes("shein")) {
       loja = "⬛ Shein";
     }
 
-    // MENSAGEM
-    const mensagem =
-`✨🔥 ACHADINHO ENCONTRADO 🔥✨
+    // TEXTO
+    const legenda =
+`✨🔥 OFERTA IMPERDÍVEL 🔥✨
 
 ${loja}
 
 📦 ${titulo}
 
-💸 De: ~~R$ ${precoAntigo || "---"}~~
-🔥 Por: R$ ${preco || "---"}
+💸 De: ~~R$ ${precoAntigo}~~
+🔥 Por: R$ ${preco}
 
 ${desconto}
 
@@ -197,7 +167,7 @@ ${desconto}
 
 👇 Clique abaixo para comprar`;
 
-    // FOTO
+    // ENVIA FOTO
     if (imagem) {
 
       await bot.sendPhoto(
@@ -205,9 +175,7 @@ ${desconto}
         imagem,
         {
 
-          caption: mensagem,
-
-          parse_mode: "Markdown",
+          caption: legenda,
 
           reply_markup: {
 
@@ -215,7 +183,7 @@ ${desconto}
               [
                 {
                   text: "🛒 COMPRAR AGORA",
-                  url: encodeURI(finalUrl)
+                  url: encodeURI(link)
                 }
               ]
             ]
@@ -225,10 +193,10 @@ ${desconto}
 
     } else {
 
-      // TEXTO
+      // ENVIA TEXTO
       await bot.sendMessage(
         chatId,
-        mensagem,
+        legenda,
         {
 
           reply_markup: {
@@ -237,7 +205,7 @@ ${desconto}
               [
                 {
                   text: "🛒 COMPRAR AGORA",
-                  url: encodeURI(finalUrl)
+                  url: encodeURI(link)
                 }
               ]
             ]
@@ -255,12 +223,12 @@ ${desconto}
 
     await bot.sendMessage(
       chatId,
-      "❌ Não consegui encontrar esse produto."
+      "❌ Não consegui pegar esse produto.\nTente outro link."
     );
   }
 });
 
-// ERRO POLLING
+// ERROS
 bot.on("polling_error", (err) => {
 
   console.log(
