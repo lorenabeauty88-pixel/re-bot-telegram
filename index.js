@@ -26,7 +26,7 @@ bot.onText(/\/start/, async (msg) => {
 
 Envie um link assim:
 
-/promo LINK_DO_PRODUTO
+/promo LINK
 
 Exemplo:
 
@@ -43,7 +43,7 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
     let link = match[1].trim();
 
-    // ADICIONA HTTPS
+    // CORRIGE LINK
     if (
       !link.startsWith("http://") &&
       !link.startsWith("https://")
@@ -51,16 +51,17 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       link = "https://" + link;
     }
 
-    // MSG
     await bot.sendMessage(
       chatId,
       "🔎 Buscando produto..."
     );
 
-    // PEGA HTML
+    // REQUISIÇÃO
     const response = await axios.get(link, {
 
       maxRedirects: 5,
+
+      validateStatus: () => true,
 
       headers: {
         "User-Agent":
@@ -70,14 +71,19 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       timeout: 15000
     });
 
+    const finalUrl =
+      response.request?.res?.responseUrl || link;
+
+    // HTML
     const html =
       typeof response.data === "string"
         ? response.data
         : JSON.stringify(response.data);
 
-    // TÍTULO
+    // TITULO
     let titulo =
       html.match(/<title>(.*?)<\/title>/i)?.[1] ||
+      html.match(/property="og:title" content="(.*?)"/i)?.[1] ||
       "Produto";
 
     titulo = titulo
@@ -131,26 +137,26 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 `📊 ${porcentagem}% OFF`;
     }
 
-    // LOJA
+    // IDENTIFICA LOJA
     let loja = "🛒 Loja Online";
 
-    if (link.includes("mercadolivre")) {
+    if (finalUrl.includes("mercadolivre")) {
       loja = "🟨 Mercado Livre";
     }
 
-    if (link.includes("amazon")) {
+    if (finalUrl.includes("amazon")) {
       loja = "🟦 Amazon";
     }
 
-    if (link.includes("shopee")) {
+    if (finalUrl.includes("shopee")) {
       loja = "🟧 Shopee";
     }
 
-    if (link.includes("shein")) {
+    if (finalUrl.includes("shein")) {
       loja = "⬛ Shein";
     }
 
-    // TEXTO
+    // LEGENDA
     const legenda =
 `✨🔥 OFERTA IMPERDÍVEL 🔥✨
 
@@ -183,7 +189,7 @@ ${desconto}
               [
                 {
                   text: "🛒 COMPRAR AGORA",
-                  url: encodeURI(link)
+                  url: encodeURI(finalUrl)
                 }
               ]
             ]
@@ -205,7 +211,7 @@ ${desconto}
               [
                 {
                   text: "🛒 COMPRAR AGORA",
-                  url: encodeURI(link)
+                  url: encodeURI(finalUrl)
                 }
               ]
             ]
