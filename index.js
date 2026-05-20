@@ -8,38 +8,39 @@ if (!token) {
   process.exit(1);
 }
 
+// INICIA BOT
 const bot = new TelegramBot(token, {
   polling: true
 });
 
 console.log("🤖 BOT CONECTADO COM POLLING");
 
-// COMANDO START
+// START
 bot.onText(/\/start/, async (msg) => {
 
   const chatId = msg.chat.id;
 
   await bot.sendMessage(
     chatId,
-`🔥 BOT DE ACHADINHOS ONLINE 🔥
+`🔥 BOT DE ACHADINHOS 🔥
 
-Envie um link assim:
+Envie um link do Mercado Livre assim:
 
 /promo https://meli.la/xxxxx`
   );
 });
 
-// COMANDO PROMO
+// PROMO
 bot.onText(/\/promo (.+)/, async (msg, match) => {
 
   const chatId = msg.chat.id;
 
   try {
 
-    // PEGA O LINK
+    // LINK
     let link = match[1].trim();
 
-    // CORRIGE LINKS SEM HTTPS
+    // CORRIGE LINK
     if (
       !link.startsWith("http://") &&
       !link.startsWith("https://")
@@ -47,17 +48,40 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       link = "https://" + link;
     }
 
+    // MSG BUSCA
     await bot.sendMessage(
       chatId,
       "🔎 Buscando produto..."
     );
 
-    // REQUISIÇÃO
-    const response = await axios.get(link, {
-      validateStatus: () => true,
+    // PRIMEIRA REQUISIÇÃO
+    const redirectResponse = await axios.get(link, {
+
       maxRedirects: 10,
 
+      validateStatus: () => true,
+
       headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"
+      },
+
+      timeout: 20000
+    });
+
+    // URL FINAL
+    const finalUrl =
+      redirectResponse.request?.res?.responseUrl || link;
+
+    // SEGUNDA REQUISIÇÃO
+    const response = await axios.get(finalUrl, {
+
+      maxRedirects: 10,
+
+      validateStatus: () => true,
+
+      headers: {
+
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36",
 
@@ -107,7 +131,11 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       const atual = parseFloat(preco);
       const antigo = parseFloat(precoAntigo);
 
-      if (!isNaN(atual) && !isNaN(antigo) && antigo > atual) {
+      if (
+        !isNaN(atual) &&
+        !isNaN(antigo) &&
+        antigo > atual
+      ) {
 
         const porcentagem =
           Math.round(
@@ -121,18 +149,20 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
     // MENSAGEM
     const mensagem =
-`⭐✨ ACHADINHO ENCONTRADO ✨⭐
+`✨🔥 ACHADINHO DO DIA 🔥✨
 
 🛒 Mercado Livre
 
 📦 ${titulo}
 
-💸 DE: ~~R$ ${precoAntigo || "---"}~~
+⚡ Oferta imperdível
+
+💰 DE: ~~R$ ${precoAntigo || "---"}~~
 🔥 POR: R$ ${preco || "---"}
 
 ${desconto}
 
-⚠️ Oferta pode acabar a qualquer momento
+🚨 Promoção por tempo limitado
 
 👇 Clique abaixo para aproveitar`;
 
@@ -143,6 +173,7 @@ ${desconto}
         chatId,
         imagem,
         {
+
           caption: mensagem,
 
           reply_markup: {
@@ -150,7 +181,7 @@ ${desconto}
               [
                 {
                   text: "🛒 VER OFERTA AGORA",
-                  url: link
+                  url: finalUrl
                 }
               ]
             ]
@@ -165,12 +196,13 @@ ${desconto}
         chatId,
         mensagem,
         {
+
           reply_markup: {
             inline_keyboard: [
               [
                 {
                   text: "🛒 VER OFERTA AGORA",
-                  url: link
+                  url: finalUrl
                 }
               ]
             ]
@@ -181,16 +213,19 @@ ${desconto}
 
   } catch (error) {
 
-    console.log("❌ ERRO:", error.message);
+    console.log(
+      "❌ ERRO:",
+      error.message
+    );
 
     await bot.sendMessage(
       chatId,
-      "❌ Não consegui pegar esse produto.\nVerifique se o link está correto."
+      "❌ Não consegui encontrar esse produto."
     );
   }
 });
 
-// ERROS DE POLLING
+// ERROS
 bot.on("polling_error", (err) => {
 
   console.error(
