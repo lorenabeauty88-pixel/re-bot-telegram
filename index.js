@@ -4,16 +4,16 @@ const axios = require("axios");
 const token = process.env.BOT_TOKEN;
 
 if (!token) {
-  console.error("❌ BOT_TOKEN não configurado!");
+  console.log("❌ BOT_TOKEN não encontrado");
   process.exit(1);
 }
 
-// INICIA BOT
+// BOT
 const bot = new TelegramBot(token, {
   polling: true
 });
 
-console.log("🤖 BOT CONECTADO COM POLLING");
+console.log("🤖 BOT ONLINE");
 
 // START
 bot.onText(/\/start/, async (msg) => {
@@ -22,11 +22,14 @@ bot.onText(/\/start/, async (msg) => {
 
   await bot.sendMessage(
     chatId,
-`🔥 BOT DE ACHADINHOS 🔥
+`🔥 BOT DIVULGADOR INTELIGENTE 🔥
 
-Envie um link do Mercado Livre assim:
+Envie links de produtos assim:
 
-/promo https://meli.la/xxxxx`
+/promo LINK
+
+Exemplo:
+/promo https://produto.mercadolivre.com.br/...`
   );
 });
 
@@ -37,7 +40,6 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
   try {
 
-    // LINK
     let link = match[1].trim();
 
     // CORRIGE LINK
@@ -48,13 +50,12 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       link = "https://" + link;
     }
 
-    // MSG BUSCA
     await bot.sendMessage(
       chatId,
       "🔎 Buscando produto..."
     );
 
-    // PRIMEIRA REQUISIÇÃO
+    // PEGA URL FINAL
     const redirectResponse = await axios.get(link, {
 
       maxRedirects: 10,
@@ -69,11 +70,11 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       timeout: 20000
     });
 
-    // URL FINAL
+    // LINK FINAL
     const finalUrl =
       redirectResponse.request?.res?.responseUrl || link;
 
-    // SEGUNDA REQUISIÇÃO
+    // HTML FINAL
     const response = await axios.get(finalUrl, {
 
       maxRedirects: 10,
@@ -98,29 +99,35 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
       timeout: 20000
     });
 
-    // HTML
     const html =
       typeof response.data === "string"
         ? response.data
         : JSON.stringify(response.data);
 
-    // TITULO
-    const titulo =
-      html.match(/<title>(.*?)<\/title>/i)?.[1]
-        ?.replace(" | Mercado Livre Brasil", "")
-        ?.replace(" | Mercado Livre", "")
-        ?.trim() || "Produto";
+    // TÍTULO
+    let titulo =
+      html.match(/<title>(.*?)<\/title>/i)?.[1] ||
+      "Produto";
+
+    titulo = titulo
+      .replace(" | Mercado Livre Brasil", "")
+      .replace(" | Mercado Livre", "")
+      .replace(" | Amazon.com.br", "")
+      .replace(" | Shopee Brasil", "")
+      .trim();
 
     // IMAGEM
     const imagem =
-      html.match(/"og:image" content="(.*?)"/i)?.[1];
+      html.match(/"og:image" content="(.*?)"/i)?.[1] ||
+      html.match(/property="og:image" content="(.*?)"/i)?.[1];
 
     // PREÇO
-    const preco =
-      html.match(/"price":"(.*?)"/i)?.[1];
+    let preco =
+      html.match(/"price":"(.*?)"/i)?.[1] ||
+      html.match(/"price":(.*?),/i)?.[1];
 
     // PREÇO ANTIGO
-    const precoAntigo =
+    let precoAntigo =
       html.match(/"originalPrice":"(.*?)"/i)?.[1];
 
     // DESCONTO
@@ -128,8 +135,15 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
 
     if (preco && precoAntigo) {
 
-      const atual = parseFloat(preco);
-      const antigo = parseFloat(precoAntigo);
+      const atual =
+        parseFloat(
+          preco.toString().replace(",", ".")
+        );
+
+      const antigo =
+        parseFloat(
+          precoAntigo.toString().replace(",", ".")
+        );
 
       if (
         !isNaN(atual) &&
@@ -143,30 +157,47 @@ bot.onText(/\/promo (.+)/, async (msg, match) => {
           );
 
         desconto =
-`📊 DESCONTO: ${porcentagem}%`;
+`📊 ${porcentagem}% OFF`;
       }
+    }
+
+    // IDENTIFICA PLATAFORMA
+    let loja = "🛒 Loja Online";
+
+    if (finalUrl.includes("mercadolivre")) {
+      loja = "🟨 Mercado Livre";
+    }
+
+    if (finalUrl.includes("amazon")) {
+      loja = "🟦 Amazon";
+    }
+
+    if (finalUrl.includes("shopee")) {
+      loja = "🟧 Shopee";
+    }
+
+    if (finalUrl.includes("shein")) {
+      loja = "⬛ Shein";
     }
 
     // MENSAGEM
     const mensagem =
-`✨🔥 ACHADINHO DO DIA 🔥✨
+`✨🔥 ACHADINHO ENCONTRADO 🔥✨
 
-🛒 Mercado Livre
+${loja}
 
 📦 ${titulo}
 
-⚡ Oferta imperdível
-
-💰 DE: ~~R$ ${precoAntigo || "---"}~~
-🔥 POR: R$ ${preco || "---"}
+💸 De: ~~R$ ${precoAntigo || "---"}~~
+🔥 Por: R$ ${preco || "---"}
 
 ${desconto}
 
 🚨 Promoção por tempo limitado
 
-👇 Clique abaixo para aproveitar`;
+👇 Clique abaixo para comprar`;
 
-    // ENVIA FOTO
+    // FOTO
     if (imagem) {
 
       await bot.sendPhoto(
@@ -176,12 +207,15 @@ ${desconto}
 
           caption: mensagem,
 
+          parse_mode: "Markdown",
+
           reply_markup: {
+
             inline_keyboard: [
               [
                 {
-                  text: "🛒 VER OFERTA AGORA",
-                  url: finalUrl
+                  text: "🛒 COMPRAR AGORA",
+                  url: encodeURI(finalUrl)
                 }
               ]
             ]
@@ -191,18 +225,19 @@ ${desconto}
 
     } else {
 
-      // ENVIA TEXTO
+      // TEXTO
       await bot.sendMessage(
         chatId,
         mensagem,
         {
 
           reply_markup: {
+
             inline_keyboard: [
               [
                 {
-                  text: "🛒 VER OFERTA AGORA",
-                  url: finalUrl
+                  text: "🛒 COMPRAR AGORA",
+                  url: encodeURI(finalUrl)
                 }
               ]
             ]
@@ -225,11 +260,11 @@ ${desconto}
   }
 });
 
-// ERROS
+// ERRO POLLING
 bot.on("polling_error", (err) => {
 
-  console.error(
-    "Polling error:",
+  console.log(
+    "❌ POLLING:",
     err.message
   );
 });
